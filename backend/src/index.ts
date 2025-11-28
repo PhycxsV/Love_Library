@@ -35,10 +35,6 @@ const io = new Server(httpServer, {
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Middleware
-const allowedOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['*'];
-
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
