@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   memberBadge: {
-    backgroundColor: 'rgba(248, 187, 208, 0.2)',
+    backgroundColor: 'rgba(233, 30, 99, 0.1)',
     color: '#E91E63',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   youBadge: {
-    backgroundColor: 'rgba(248, 187, 208, 0.25)',
+    backgroundColor: 'rgba(233, 30, 99, 0.12)',
     color: '#E91E63',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
   },
   heartMessageCardExpanded: {
     borderColor: '#E91E63',
-    backgroundColor: 'rgba(248, 187, 208, 0.15)',
+    backgroundColor: 'rgba(233, 30, 99, 0.08)',
   },
   messageHeader: {
     flexDirection: 'row',
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(248, 187, 208, 0.2)',
+    borderTopColor: 'rgba(233, 30, 99, 0.1)',
   },
   recipientsText: {
     color: '#666',

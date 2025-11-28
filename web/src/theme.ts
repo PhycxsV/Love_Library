@@ -8,13 +8,13 @@ export const theme = createTheme({
       dark: '#C2185B', // Darker red for active states
     },
     secondary: {
-      main: '#F8BBD0', // Light pink accent
-      light: '#FCE4EC',
-      dark: '#F48FB1',
+      main: '#FCE4EC', // Very subtle light pink accent (reduced)
+      light: '#FFF0F5',
+      dark: '#F8BBD0',
     },
     background: {
-      default: '#FAFAFA', // Clean light gray background
-      paper: '#FFFFFF', // Pure white for cards/paper
+      default: '#FFF5F8', // Very light red tint background
+      paper: '#FFFBFD', // Very light pink-red tint for cards/paper
     },
     text: {
       primary: '#1A1A1A', // Almost black for text
@@ -168,7 +168,7 @@ export const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 12,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: '#FFFBFD',
             '&:hover fieldset': {
               borderColor: '#E91E63',
             },

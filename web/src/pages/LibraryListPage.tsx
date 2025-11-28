@@ -320,7 +320,7 @@ export default function LibraryListPage() {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: '#FFFBFD',
                   borderRadius: 3,
                   overflow: 'hidden',
                   border: '1px solid rgba(0, 0, 0, 0.06)',
@@ -392,10 +392,10 @@ export default function LibraryListPage() {
                             label={`${library.members.length} member${library.members.length !== 1 ? 's' : ''}`}
                             size="small"
                             sx={{
-                              backgroundColor: 'rgba(248, 187, 208, 0.3)',
+                              backgroundColor: 'rgba(233, 30, 99, 0.1)',
                               color: '#E91E63',
                               fontWeight: 600,
-                              border: '1px solid rgba(248, 187, 208, 0.5)',
+                              border: '1px solid rgba(233, 30, 99, 0.2)',
                               height: 28,
                             }}
                           />
@@ -434,12 +434,12 @@ export default function LibraryListPage() {
         onClick={() => setJoinDialogOpen(true)}
             size="large"
             sx={{
-              background: 'linear-gradient(135deg, #F8BBD0 0%, #F48FB1 100%)',
+              background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
               '&:hover': { 
-                background: 'linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%)',
+                background: 'linear-gradient(135deg, #F06292 0%, #E91E63 100%)',
                 transform: 'scale(1.05)',
               },
-              boxShadow: '0px 8px 24px rgba(248, 187, 208, 0.4)',
+              boxShadow: '0px 8px 24px rgba(233, 30, 99, 0.4)',
               transition: 'all 0.3s ease',
             }}
       >

@@ -103,7 +103,7 @@ export default function AuthPage() {
       }}
     >
       <Container maxWidth="sm">
-        <Paper elevation={3} sx={{ p: 4, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
+        <Paper elevation={3} sx={{ p: 4, backgroundColor: '#FFFBFD' }}>
         <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 2 }}>
           PhotoShare
         </Typography>

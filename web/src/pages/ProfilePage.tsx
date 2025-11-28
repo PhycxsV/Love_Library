@@ -110,7 +110,7 @@ export default function ProfilePage() {
         <Paper
           elevation={0}
           sx={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: '#FFFBFD',
             borderRadius: 2,
             p: 4,
           }}

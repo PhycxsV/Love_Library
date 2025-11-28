@@ -20,8 +20,8 @@ function App() {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#FAFAFA',
-        background: 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
+        backgroundColor: '#FFF5F8',
+        background: 'linear-gradient(180deg, #FFFBFD 0%, #FFF5F8 100%)',
       }}
     >
       <Routes>

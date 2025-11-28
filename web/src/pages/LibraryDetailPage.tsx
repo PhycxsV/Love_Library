@@ -524,7 +524,7 @@ export default function LibraryDetailPage() {
               <Paper
                 elevation={0}
                 sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  backgroundColor: '#FFFBFD',
                   borderRadius: 2,
                   p: 3,
                   mb: 3,
@@ -539,7 +539,7 @@ export default function LibraryDetailPage() {
               <Paper
                 elevation={0}
                 sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  backgroundColor: '#FFFBFD',
                   borderRadius: 2,
                   p: 3,
                   mb: 3,
@@ -576,7 +576,7 @@ export default function LibraryDetailPage() {
                 sx={{
                   p: 8,
                   textAlign: 'center',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  backgroundColor: '#FFFBFD',
                   borderRadius: 2,
                 }}
               >
@@ -683,7 +683,7 @@ export default function LibraryDetailPage() {
                 sx={{
                   p: 6,
                   textAlign: 'center',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  backgroundColor: '#FFFBFD',
                   borderRadius: 2,
                 }}
               >
@@ -713,7 +713,7 @@ export default function LibraryDetailPage() {
                   elevation={0}
                   sx={{
                     p: 2,
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backgroundColor: '#FFFBFD',
                     borderRadius: 2,
                   }}
                 >
@@ -768,8 +768,8 @@ export default function LibraryDetailPage() {
                           border: '2px solid',
                           borderColor: isExpanded ? '#E91E63' : 'rgba(233, 30, 99, 0.2)',
                             background: isExpanded 
-                            ? 'linear-gradient(135deg, rgba(248, 187, 208, 0.15) 0%, rgba(252, 228, 236, 0.25) 100%)'
-                            : '#FFFFFF',
+                            ? 'linear-gradient(135deg, rgba(233, 30, 99, 0.08) 0%, rgba(233, 30, 99, 0.05) 100%)'
+                            : '#FFFBFD',
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             transform: 'translateY(-4px)',
@@ -807,7 +807,7 @@ export default function LibraryDetailPage() {
                                 {new Date(message.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>
-                            <FavoriteIcon sx={{ color: '#F8BBD0', fontSize: 24 }} />
+                            <FavoriteIcon sx={{ color: '#E91E63', fontSize: 24, opacity: 0.6 }} />
                           </Box>
 
                           {/* Message Preview/Full */}
@@ -892,7 +892,7 @@ export default function LibraryDetailPage() {
             >
               <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <FavoriteIcon sx={{ color: '#F8BBD0' }} />
+                  <FavoriteIcon sx={{ color: '#E91E63', opacity: 0.6 }} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Send Heart Message
                   </Typography>
