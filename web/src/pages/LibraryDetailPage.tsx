@@ -1546,7 +1546,6 @@ export default function LibraryDetailPage() {
                   ) : (
                     <List sx={{ py: 0 }}>
                       {photoComments.map((comment) => {
-                        const isOwnComment = comment.user.id === user?.id;
                         return (
                           <ListItem key={comment.id} sx={{ px: 0, py: 1.5 }}>
                             <Box sx={{ width: '100%' }}>
