@@ -46,6 +46,18 @@ app.get('/api/health', (req, res) => {
 // Setup Socket.io
 setupSocketIO(io);
 
+// Run migrations on startup (for production deployments)
+if (process.env.NODE_ENV === 'production') {
+  const { execSync } = require('child_process');
+  try {
+    console.log('🔄 Running database migrations...');
+    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    console.log('✅ Migrations completed');
+  } catch (error) {
+    console.error('⚠️ Migration error (may be normal if already migrated):', error);
+  }
+}
+
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Access from your phone using:`);
