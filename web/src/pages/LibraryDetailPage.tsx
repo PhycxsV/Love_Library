@@ -13,8 +13,6 @@ import {
   IconButton,
   Tabs,
   Tab,
-  ImageList,
-  ImageListItem,
   List,
   ListItem,
   Avatar,
@@ -32,9 +30,6 @@ import {
   Divider,
   Checkbox,
   FormControlLabel,
-  Fab,
-  Backdrop,
-  Badge,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -119,8 +114,6 @@ export default function LibraryDetailPage() {
   const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'members'>('photos');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
-  const [showRecipientSelector, setShowRecipientSelector] = useState(false);
-  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [messageFilter, setMessageFilter] = useState<'all' | 'received' | 'sent'>('all');
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
