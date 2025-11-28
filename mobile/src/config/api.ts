@@ -2,8 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 🚀 DEPLOYED BACKEND (Recommended for APK):
-// After deploying to Railway/Render, replace the URL below with your deployed backend URL
-// Example: 'https://your-app.railway.app/api' or 'https://your-app.onrender.com/api'
+// Your backend is deployed at: https://love-library-a28m.onrender.com
 //
 // 📱 LOCAL DEVELOPMENT (For testing on same WiFi):
 // 1. Get your IP: cd backend && npm run get-ip
@@ -12,8 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // 4. Phone must be on same WiFi network
 
 const API_URL = __DEV__ 
-  ? 'https://your-deployed-backend.railway.app/api'  // ⚠️ REPLACE with your deployed backend URL!
-  : 'https://your-deployed-backend.railway.app/api';  // Same URL for production
+  ? 'https://love-library-a28m.onrender.com/api'  // Your deployed Render backend
+  : 'https://love-library-a28m.onrender.com/api';  // Same URL for production
 
 const api = axios.create({
   baseURL: API_URL,

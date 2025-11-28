@@ -57,10 +57,10 @@ export function setupSocketIO(io: Server) {
       console.log(`User ${socket.userId} left library ${libraryId}`);
     });
 
-    // Send message (general library message)
-    socket.on('send-message', async (data: { libraryId: string; content: string; photoId?: string; replyToId?: string | null }) => {
+    // Send message (heart message with recipients OR photo comment)
+    socket.on('send-message', async (data: { libraryId: string; content: string; photoId?: string; replyToId?: string | null; recipientIds?: string[] }) => {
       try {
-        const { libraryId, content, photoId, replyToId } = data;
+        const { libraryId, content, photoId, replyToId, recipientIds } = data;
 
         if (!content.trim()) {
           return;
@@ -80,7 +80,7 @@ export function setupSocketIO(io: Server) {
           return;
         }
 
-        // If photoId is provided, verify photo exists and belongs to library
+        // If photoId is provided, verify photo exists and belongs to library (photo comment)
         if (photoId) {
           const photo = await prisma.photo.findUnique({
             where: { id: photoId },
@@ -104,6 +104,25 @@ export function setupSocketIO(io: Server) {
           }
         }
 
+        // For heart messages (no photoId), require recipients
+        if (!photoId && (!recipientIds || recipientIds.length === 0)) {
+          return;
+        }
+
+        // Verify recipients are members (for heart messages)
+        if (!photoId && recipientIds) {
+          const recipients = await prisma.libraryMember.findMany({
+            where: {
+              libraryId,
+              userId: { in: recipientIds },
+            },
+          });
+
+          if (recipients.length !== recipientIds.length) {
+            return;
+          }
+        }
+
         // Save message to database
         const message = await prisma.message.create({
           data: {
@@ -112,6 +131,14 @@ export function setupSocketIO(io: Server) {
             replyToId: replyToId || null,
             userId: socket.userId!,
             content,
+            // Add recipients for heart messages
+            ...(recipientIds && recipientIds.length > 0 && {
+              recipients: {
+                create: recipientIds.map((recipientId: string) => ({
+                  userId: recipientId,
+                })),
+              },
+            }),
           },
           include: {
             user: {
@@ -122,16 +149,30 @@ export function setupSocketIO(io: Server) {
                 profilePhoto: true,
               },
             },
+            recipients: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    profilePhoto: true,
+                  },
+                },
+              },
+            },
           },
         });
 
-        // Broadcast to all users in the library room
+        // Broadcast to specific users (recipients + sender) for heart messages
         if (photoId) {
           // Photo comment - emit to photo-specific event
           io.to(`library:${libraryId}`).emit('new-photo-comment', { photoId, comment: message });
         } else {
-          // General library message
-          io.to(`library:${libraryId}`).emit('new-message', message);
+          // Heart message - emit only to sender and recipients
+          const userIdsToNotify = [socket.userId!, ...recipientIds];
+          userIdsToNotify.forEach((uid) => {
+            io.to(`library:${libraryId}`).emit('new-heart-message', message);
+          });
         }
       } catch (error) {
         console.error('Send message error:', error);

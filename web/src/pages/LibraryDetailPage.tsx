@@ -48,6 +48,9 @@ import AddIcon from '@mui/icons-material/Add';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import PersonIcon from '@mui/icons-material/Person';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
@@ -73,6 +76,14 @@ interface Message {
     username: string;
     profilePhoto?: string | null;
   };
+  recipients?: {
+    id: string;
+    user: {
+      id: string;
+      username: string;
+      profilePhoto?: string | null;
+    };
+  }[];
   createdAt: string;
 }
 
@@ -101,6 +112,10 @@ export default function LibraryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'members'>('photos');
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [showRecipientSelector, setShowRecipientSelector] = useState(false);
+  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const [showSendDialog, setShowSendDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [uploading, setUploading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
@@ -137,9 +152,9 @@ export default function LibraryDetailPage() {
     };
   }, [libraryId]);
 
-  // Reload library data when switching to members tab to get updated member list
+  // Reload library data when switching to members or messages tab to get updated member list
   useEffect(() => {
-    if (activeTab === 'members' && libraryId) {
+    if ((activeTab === 'members' || activeTab === 'messages') && libraryId) {
       const reloadLibrary = async () => {
         try {
           const libraryRes = await api.get(`/libraries/${libraryId}`);
@@ -182,7 +197,16 @@ export default function LibraryDetailPage() {
           // Check if message already exists to prevent duplicates
           const exists = prev.some(m => m.id === message.id);
           if (exists) return prev;
-          return [...prev, message];
+          return [message, ...prev];
+        });
+      });
+
+      newSocket.on('new-heart-message', (message: Message) => {
+        setMessages((prev) => {
+          // Check if message already exists to prevent duplicates
+          const exists = prev.some(m => m.id === message.id);
+          if (exists) return prev;
+          return [message, ...prev];
         });
       });
 
@@ -342,15 +366,29 @@ export default function LibraryDetailPage() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!messageText.trim() || !socket) return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || selectedRecipients.length === 0) return;
 
-    socket.emit('send-message', {
-      libraryId,
-      content: messageText,
-    });
+    try {
+      // Use API endpoint for heart messages with recipients
+      const response = await api.post(`/messages/library/${libraryId}`, {
+        content: messageText,
+        recipientIds: selectedRecipients,
+      });
 
-    setMessageText('');
+      setMessages([response.data, ...messages]);
+      setMessageText('');
+      setSelectedRecipients([]);
+      setShowSendDialog(false);
+      setSnackbar({ open: true, message: 'Heart message sent! 💕', severity: 'success' });
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      setSnackbar({ 
+        open: true, 
+        message: error.response?.data?.error || 'Failed to send message',
+        severity: 'error' 
+      });
+    }
   };
 
   const handleOpenPhoto = async (photo: Photo) => {
@@ -471,7 +509,7 @@ export default function LibraryDetailPage() {
             indicatorColor="secondary"
           >
             <Tab label="Photos" />
-            <Tab label="Messages" />
+            <Tab label="Heart Messages" icon={<FavoriteIcon sx={{ fontSize: 18 }} />} iconPosition="start" />
             <Tab label="Members" />
           </Tabs>
         </Toolbar>
@@ -636,121 +674,318 @@ export default function LibraryDetailPage() {
             )}
           </>
         ) : activeTab === 'messages' ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', maxHeight: 600 }}>
-            <Paper 
-              elevation={0}
-              sx={{ 
-                flex: 1, 
-                overflow: 'auto', 
-                p: 2, 
-                mb: 2, 
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: 2,
-                minHeight: 400,
-              }}
-            >
-              {messages.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 8 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    No messages yet. Start the conversation!
-                  </Typography>
-                </Box>
-              ) : (
-                <List sx={{ py: 0 }}>
-                {messages.map((message) => {
-                  const isOwnMessage = message.user.id === user?.id;
-                  return (
-                    <ListItem
-                      key={message.id}
-                      sx={{
-                        justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
-                          px: 1,
-                          py: 0.5,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                            maxWidth: '75%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
-                          }}
-                        >
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              mb: 0.5,
-                              color: 'text.secondary',
-                              px: 1,
-                            }}
-                          >
-                            {message.user.username}
-                          </Typography>
-                          <Box
-                            sx={{
-                              bgcolor: isOwnMessage ? '#6F4E37' : 'rgba(111, 78, 55, 0.1)',
-                              color: isOwnMessage ? 'white' : '#3E2723',
-                          p: 1.5,
-                          borderRadius: 2,
-                              maxWidth: '100%',
-                        }}
-                      >
-                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                              {message.content}
-                        </Typography>
-                          </Box>
-                      </Box>
-                    </ListItem>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </List>
-              )}
-            </Paper>
-
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: 2,
-              }}
-            >
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Type a message..."
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {messages.length === 0 ? (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 6,
+                  textAlign: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: 2,
                 }}
-                multiline
-                maxRows={4}
-                  size="small"
-              />
-                <IconButton
-                  color="primary"
-                  onClick={handleSendMessage}
-                  disabled={!messageText.trim() || !socket}
+              >
+                <FavoriteBorderIcon sx={{ fontSize: 64, color: '#6F4E37', opacity: 0.3, mb: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#3E2723' }}>
+                  No heart messages yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Send a sweet message to someone special
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<FavoriteIcon />}
+                  onClick={() => setShowSendDialog(true)}
                   sx={{
                     backgroundColor: '#6F4E37',
-                    color: 'white',
                     '&:hover': { backgroundColor: '#5A3E2A' },
-                    '&.Mui-disabled': {
-                      backgroundColor: 'rgba(111, 78, 55, 0.3)',
-                      color: 'rgba(255, 255, 255, 0.5)',
-                    },
                   }}
                 >
-                  <SendIcon />
+                  Send Heart Message
+                </Button>
+              </Paper>
+            ) : (
+              <>
+                {/* Header with Send Button - Only show when there are messages */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderRadius: 2,
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<FavoriteIcon />}
+                    onClick={() => setShowSendDialog(true)}
+                    sx={{
+                      backgroundColor: '#6F4E37',
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 3,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      boxShadow: '0 4px 12px rgba(111, 78, 55, 0.3)',
+                      '&:hover': {
+                        backgroundColor: '#5A3E2A',
+                        boxShadow: '0 6px 16px rgba(111, 78, 55, 0.4)',
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.2s ease',
+                      width: '100%',
+                    }}
+                  >
+                    Send Heart Message
+                  </Button>
+                </Paper>
+
+                {/* Heart Messages Grid */}
+                <Grid container spacing={2}>
+                  {messages.map((message) => {
+                    const isOwnMessage = message.user.id === user?.id;
+                    const isExpanded = expandedMessageId === message.id;
+                    const recipientNames = message.recipients?.map(r => r.user.username).join(', ') || '';
+                    
+                    return (
+                    <Grid item xs={12} sm={6} md={4} key={message.id}>
+                      <Card
+                        onClick={() => setExpandedMessageId(isExpanded ? null : message.id)}
+                        sx={{
+                          cursor: 'pointer',
+                          borderRadius: 3,
+                          overflow: 'hidden',
+                          border: '2px solid',
+                          borderColor: isExpanded ? '#6F4E37' : 'rgba(111, 78, 55, 0.2)',
+                          background: isExpanded 
+                            ? 'linear-gradient(135deg, rgba(255, 182, 193, 0.1) 0%, rgba(255, 192, 203, 0.05) 100%)'
+                            : 'rgba(255, 255, 255, 0.95)',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 8px 24px rgba(111, 78, 55, 0.2)',
+                            borderColor: '#6F4E37',
+                          },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            p: 2.5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1.5,
+                          }}
+                        >
+                          {/* Header */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar
+                              src={message.user.profilePhoto || undefined}
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                bgcolor: '#6F4E37',
+                                fontSize: 16,
+                              }}
+                            >
+                              {message.user.username.charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#3E2723' }}>
+                                {message.user.username}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(message.createdAt).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                            <FavoriteIcon sx={{ color: '#e91e63', fontSize: 24 }} />
+                          </Box>
+
+                          {/* Message Preview/Full */}
+                          <Box
+                            sx={{
+                              minHeight: isExpanded ? 'auto' : 60,
+                              maxHeight: isExpanded ? 'none' : 60,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                color: '#3E2723',
+                                lineHeight: 1.6,
+                                wordBreak: 'break-word',
+                                display: isExpanded ? 'block' : '-webkit-box',
+                                WebkitLineClamp: isExpanded ? 'none' : 3,
+                                WebkitBoxOrient: 'vertical',
+                              }}
+                            >
+                              {message.content}
+                            </Typography>
+                          </Box>
+
+                          {/* Recipients */}
+                          {message.recipients && message.recipients.length > 0 && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <PersonIcon sx={{ fontSize: 16, color: '#6F4E37', opacity: 0.7 }} />
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                To: {recipientNames}
+                              </Typography>
+                            </Box>
+                          )}
+
+                          {/* Click hint */}
+                          {!isExpanded && (
+                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: 0.5 }}>
+                              Click to read full message
+                            </Typography>
+                          )}
+                        </Box>
+                      </Card>
+                    </Grid>
+                  );
+                  })}
+                </Grid>
+              </>
+            )}
+
+            {/* Send Heart Message Dialog */}
+            <Dialog
+              open={showSendDialog}
+              onClose={() => {
+                setShowSendDialog(false);
+                setMessageText('');
+                setSelectedRecipients([]);
+              }}
+              TransitionProps={{
+                onEnter: () => {
+                  // Ensure library data is loaded when dialog opens
+                  if (!library || !library.members) {
+                    const reloadLibrary = async () => {
+                      try {
+                        const libraryRes = await api.get(`/libraries/${libraryId}`);
+                        setLibrary(libraryRes.data);
+                      } catch (error) {
+                        console.error('Error loading library data:', error);
+                      }
+                    };
+                    reloadLibrary();
+                  }
+                }
+              }}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  borderRadius: 3,
+                }
+              }}
+            >
+              <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FavoriteIcon sx={{ color: '#e91e63' }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Send Heart Message
+                  </Typography>
+                </Box>
+                <IconButton onClick={() => {
+                  setShowSendDialog(false);
+                  setMessageText('');
+                  setSelectedRecipients([]);
+                }} size="small">
+                  <CloseIcon />
                 </IconButton>
-              </Box>
-            </Paper>
+              </DialogTitle>
+              <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+                  {/* Recipient Selection */}
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#3E2723' }}>
+                      Choose Recipients
+                    </Typography>
+                    {library && library.members && (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {library.members
+                          .filter((member: any) => member.user.id !== user?.id)
+                          .map((member: any) => (
+                            <FormControlLabel
+                              key={member.user.id}
+                              control={
+                                <Checkbox
+                                  checked={selectedRecipients.includes(member.user.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedRecipients([...selectedRecipients, member.user.id]);
+                                    } else {
+                                      setSelectedRecipients(selectedRecipients.filter(id => id !== member.user.id));
+                                    }
+                                  }}
+                                  sx={{
+                                    color: '#6F4E37',
+                                    '&.Mui-checked': {
+                                      color: '#e91e63',
+                                    },
+                                  }}
+                                />
+                              }
+                              label={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Avatar
+                                    src={member.user.profilePhoto || undefined}
+                                    sx={{ width: 24, height: 24, bgcolor: '#6F4E37', fontSize: 12 }}
+                                  >
+                                    {member.user.username.charAt(0).toUpperCase()}
+                                  </Avatar>
+                                  <Typography variant="body2">{member.user.username}</Typography>
+                                </Box>
+                              }
+                            />
+                          ))}
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* Message Input */}
+                  <TextField
+                    label="Your Heart Message"
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Write something sweet..."
+                    variant="outlined"
+                    inputProps={{ maxLength: 1000 }}
+                    helperText={`${messageText.length}/1000 characters`}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions sx={{ p: 3, pt: 2 }}>
+                <Button
+                  onClick={() => {
+                    setShowSendDialog(false);
+                    setMessageText('');
+                    setSelectedRecipients([]);
+                  }}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSendMessage}
+                  variant="contained"
+                  disabled={!messageText.trim() || selectedRecipients.length === 0}
+                  startIcon={<FavoriteIcon />}
+                  sx={{
+                    backgroundColor: '#6F4E37',
+                    '&:hover': { backgroundColor: '#5A3E2A' },
+                    px: 3,
+                  }}
+                >
+                  Send
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Box>
         ) : activeTab === 'members' ? (
           <Paper

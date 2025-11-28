@@ -23,6 +23,7 @@ model User {
   libraries LibraryMember[]
   messages  Message[]
   photos    Photo[]
+  messageRecipients MessageRecipient[]
 }
 
 model Library {
@@ -90,11 +91,26 @@ model Message {
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade)
   replies Message[] @relation("MessageReplies")
+  recipients MessageRecipient[] // Recipients for private heart messages
 
   @@index([libraryId])
   @@index([userId])
   @@index([photoId])
   @@index([replyToId])
+}
+
+model MessageRecipient {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
 }
 
 

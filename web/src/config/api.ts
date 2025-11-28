@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.DEV
-  ? 'http://localhost:5000/api'
-  : 'https://your-production-api.com/api';
+  ? 'http://localhost:5000/api'  // Local development
+  : 'https://love-library-a28m.onrender.com/api';  // Production (Render)
 
 const api = axios.create({
   baseURL: API_URL,

@@ -25,7 +25,16 @@ interface Message {
   user: {
     id: string;
     username: string;
+    profilePhoto?: string | null;
   };
+  recipients?: {
+    id: string;
+    user: {
+      id: string;
+      username: string;
+      profilePhoto?: string | null;
+    };
+  }[];
   createdAt: string;
 }
 
@@ -45,6 +54,9 @@ export default function LibraryDetailScreen() {
   const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'members'>('photos');
   const [library, setLibrary] = useState<any>(null);
   const [removingMember, setRemovingMember] = useState<string | null>(null);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -56,9 +68,9 @@ export default function LibraryDetailScreen() {
     };
   }, [libraryId]);
 
-  // Reload library data when switching to members tab to get updated member list
+  // Reload library data when switching to members or messages tab to get updated member list
   useEffect(() => {
-    if (activeTab === 'members' && libraryId) {
+    if ((activeTab === 'members' || activeTab === 'messages') && libraryId) {
       const reloadLibrary = async () => {
         try {
           const libraryRes = await api.get(`/libraries/${libraryId}`);
@@ -70,6 +82,21 @@ export default function LibraryDetailScreen() {
       reloadLibrary();
     }
   }, [activeTab, libraryId]);
+
+  // Ensure library data is loaded when send dialog opens
+  useEffect(() => {
+    if (showSendDialog && (!library || !library.members) && libraryId) {
+      const reloadLibrary = async () => {
+        try {
+          const libraryRes = await api.get(`/libraries/${libraryId}`);
+          setLibrary(libraryRes.data);
+        } catch (error) {
+          console.error('Error loading library data:', error);
+        }
+      };
+      reloadLibrary();
+    }
+  }, [showSendDialog, library, libraryId]);
 
   const setupSocket = async () => {
     try {
@@ -83,7 +110,15 @@ export default function LibraryDetailScreen() {
       });
 
       newSocket.on('new-message', (message: Message) => {
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => [message, ...prev]);
+      });
+
+      newSocket.on('new-heart-message', (message: Message) => {
+        setMessages((prev) => {
+          const exists = prev.some(m => m.id === message.id);
+          if (exists) return prev;
+          return [message, ...prev];
+        });
       });
 
       setSocket(newSocket);
@@ -182,15 +217,24 @@ export default function LibraryDetailScreen() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!messageText.trim() || !socket) return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || selectedRecipients.length === 0) return;
 
-    socket.emit('send-message', {
-      libraryId,
-      content: messageText,
-    });
+    try {
+      const response = await api.post(`/messages/library/${libraryId}`, {
+        content: messageText,
+        recipientIds: selectedRecipients,
+      });
 
-    setMessageText('');
+      setMessages([response.data, ...messages]);
+      setMessageText('');
+      setSelectedRecipients([]);
+      setShowSendDialog(false);
+      Alert.alert('Success', 'Heart message sent! 💕');
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to send message');
+    }
   };
 
   return (
@@ -214,8 +258,9 @@ export default function LibraryDetailScreen() {
             mode={activeTab === 'messages' ? 'contained' : 'outlined'}
             onPress={() => setActiveTab('messages')}
             style={styles.tabButton}
+            icon="heart"
           >
-            Messages
+            Hearts
           </Button>
           <Button
             mode={activeTab === 'members' ? 'contained' : 'outlined'}
@@ -252,68 +297,196 @@ export default function LibraryDetailScreen() {
             </View>
           }
         />
-      ) : (
-        <KeyboardAvoidingView
-          style={styles.messagesContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <FlatList
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const isOwnMessage = item.user.id === user?.id;
-              return (
-                <View
-                  style={[
-                    styles.messageContainer,
-                    isOwnMessage ? styles.ownMessage : styles.otherMessage,
-                  ]}
-                >
-                  <Text
-                    variant="bodySmall"
-                    style={[
-                      styles.messageAuthor,
-                      isOwnMessage && styles.ownMessageAuthor,
-                    ]}
+      ) : activeTab === 'messages' ? (
+        <View style={styles.messagesContainer}>
+          {messages.length === 0 ? (
+            <View style={styles.empty}>
+              <Text variant="headlineSmall" style={styles.emptyTitle}>
+                💕
+              </Text>
+              <Text variant="titleMedium" style={styles.emptyText}>
+                No heart messages yet
+              </Text>
+              <Text variant="bodyMedium" style={styles.emptySubtext}>
+                Send a sweet message to someone special
+              </Text>
+              <Button
+                mode="contained"
+                icon="heart"
+                onPress={() => setShowSendDialog(true)}
+                style={styles.sendButton}
+              >
+                Send Heart Message
+              </Button>
+            </View>
+          ) : (
+            <>
+              {/* Header with Send Button - Only show when there are messages */}
+              <Card style={styles.messagesHeaderCard}>
+                <Card.Content style={styles.messagesHeaderContent}>
+                  <Button
+                    mode="contained"
+                    icon="heart"
+                    onPress={() => setShowSendDialog(true)}
+                    style={styles.sendButtonTop}
+                    contentStyle={styles.sendButtonContent}
                   >
-                    {item.user.username}
-                  </Text>
-                  <Text
-                    variant="bodyMedium"
+                    Send Heart Message
+                  </Button>
+                </Card.Content>
+              </Card>
+            <FlatList
+              data={messages}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.messagesList}
+              renderItem={({ item }) => {
+                const isExpanded = expandedMessageId === item.id;
+                const recipientNames = item.recipients?.map(r => r.user.username).join(', ') || '';
+                
+                return (
+                  <Card
                     style={[
-                      styles.messageText,
-                      isOwnMessage && styles.ownMessageText,
+                      styles.heartMessageCard,
+                      isExpanded && styles.heartMessageCardExpanded,
                     ]}
+                    onPress={() => setExpandedMessageId(isExpanded ? null : item.id)}
                   >
-                    {item.content}
+                    <Card.Content>
+                      <View style={styles.messageHeader}>
+                        <View style={styles.messageUserInfo}>
+                          <Avatar.Text
+                            size={32}
+                            label={item.user.username.charAt(0).toUpperCase()}
+                            style={styles.messageAvatar}
+                          />
+                          <View style={styles.messageUserDetails}>
+                            <Text variant="titleSmall" style={styles.messageUsername}>
+                              {item.user.username}
+                            </Text>
+                            <Text variant="bodySmall" style={styles.messageDate}>
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={styles.heartIcon}>💕</Text>
+                      </View>
+                      <Text
+                        variant="bodyMedium"
+                        style={styles.messageContent}
+                        numberOfLines={isExpanded ? undefined : 3}
+                      >
+                        {item.content}
+                      </Text>
+                      {item.recipients && item.recipients.length > 0 && (
+                        <View style={styles.recipientsContainer}>
+                          <Text variant="bodySmall" style={styles.recipientsText}>
+                            To: {recipientNames}
+                          </Text>
+                        </View>
+                      )}
+                      {!isExpanded && (
+                        <Text variant="bodySmall" style={styles.expandHint}>
+                          Tap to read full message
+                        </Text>
+                      )}
+                    </Card.Content>
+                    </Card>
+                  );
+                }}
+              />
+            </>
+          )}
+
+          {/* Send Heart Message Dialog */}
+          {showSendDialog && (
+            <View style={styles.dialogOverlay}>
+              <Card style={styles.sendDialog}>
+                <Card.Title
+                  title="Send Heart Message"
+                  subtitle="Choose who to send to"
+                  left={(props) => <Avatar.Icon {...props} icon="heart" style={{ backgroundColor: '#e91e63' }} />}
+                  right={(props) => (
+                    <IconButton
+                      {...props}
+                      icon="close"
+                      onPress={() => {
+                        setShowSendDialog(false);
+                        setMessageText('');
+                        setSelectedRecipients([]);
+                      }}
+                    />
+                  )}
+                />
+                <Card.Content>
+                  <Text variant="titleSmall" style={styles.recipientLabel}>
+                    Recipients
                   </Text>
-                </View>
-              );
-            }}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <Text>No messages yet. Start the conversation!</Text>
-              </View>
-            }
-          />
-          <View style={styles.messageInputContainer}>
-            <TextInput
-              mode="outlined"
-              value={messageText}
-              onChangeText={setMessageText}
-              placeholder="Type a message..."
-              style={styles.messageInput}
-              multiline
-            />
-            <Button
-              mode="contained"
-              onPress={handleSendMessage}
-              disabled={!messageText.trim()}
-            >
-              Send
-            </Button>
-          </View>
-        </KeyboardAvoidingView>
+                  {library && library.members && (
+                    <View style={styles.recipientList}>
+                      {library.members
+                        .filter((member: any) => member.user.id !== user?.id)
+                        .map((member: any) => (
+                          <View key={member.user.id} style={styles.recipientItem}>
+                            <Checkbox
+                              status={selectedRecipients.includes(member.user.id) ? 'checked' : 'unchecked'}
+                              onPress={() => {
+                                if (selectedRecipients.includes(member.user.id)) {
+                                  setSelectedRecipients(selectedRecipients.filter(id => id !== member.user.id));
+                                } else {
+                                  setSelectedRecipients([...selectedRecipients, member.user.id]);
+                                }
+                              }}
+                            />
+                            <Avatar.Text
+                              size={32}
+                              label={member.user.username.charAt(0).toUpperCase()}
+                              style={styles.recipientAvatar}
+                            />
+                            <Text variant="bodyMedium" style={styles.recipientName}>
+                              {member.user.username}
+                            </Text>
+                          </View>
+                        ))}
+                    </View>
+                  )}
+                  <TextInput
+                    mode="outlined"
+                    label="Your Heart Message"
+                    value={messageText}
+                    onChangeText={setMessageText}
+                    placeholder="Write something sweet..."
+                    multiline
+                    numberOfLines={4}
+                    style={styles.messageInputDialog}
+                    maxLength={1000}
+                  />
+                  <Text variant="bodySmall" style={styles.charCount}>
+                    {messageText.length}/1000 characters
+                  </Text>
+                </Card.Content>
+                <Card.Actions>
+                  <Button
+                    onPress={() => {
+                      setShowSendDialog(false);
+                      setMessageText('');
+                      setSelectedRecipients([]);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    mode="contained"
+                    icon="heart"
+                    onPress={handleSendMessage}
+                    disabled={!messageText.trim() || selectedRecipients.length === 0}
+                  >
+                    Send
+                  </Button>
+                </Card.Actions>
+              </Card>
+            </View>
+          )}
+        </View>
       ) : activeTab === 'members' ? (
         <FlatList
           data={library?.members || []}
@@ -514,6 +687,154 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     fontSize: 12,
+  },
+  heartMessageCard: {
+    margin: 8,
+    marginBottom: 12,
+    elevation: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(111, 78, 55, 0.2)',
+  },
+  heartMessageCardExpanded: {
+    borderColor: '#6F4E37',
+    backgroundColor: 'rgba(255, 182, 193, 0.1)',
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  messageUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  messageAvatar: {
+    backgroundColor: '#6F4E37',
+    marginRight: 12,
+  },
+  messageUserDetails: {
+    flex: 1,
+  },
+  messageUsername: {
+    fontWeight: '600',
+    color: '#3E2723',
+  },
+  messageDate: {
+    color: '#666',
+    marginTop: 2,
+  },
+  heartIcon: {
+    fontSize: 24,
+  },
+  messageContent: {
+    color: '#3E2723',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  recipientsContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(111, 78, 55, 0.1)',
+  },
+  recipientsText: {
+    color: '#666',
+    fontSize: 12,
+  },
+  expandHint: {
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 8,
+    fontSize: 11,
+  },
+  messagesList: {
+    padding: 8,
+    paddingBottom: 80,
+  },
+  emptyTitle: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontWeight: '600',
+    color: '#3E2723',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  sendButton: {
+    backgroundColor: '#6F4E37',
+    paddingHorizontal: 24,
+  },
+  messagesHeaderCard: {
+    margin: 8,
+    marginBottom: 12,
+    elevation: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  messagesHeaderContent: {
+    paddingVertical: 8,
+  },
+  sendButtonTop: {
+    backgroundColor: '#6F4E37',
+    width: '100%',
+  },
+  sendButtonContent: {
+    paddingVertical: 4,
+  },
+  dialogOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  sendDialog: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+  },
+  recipientLabel: {
+    fontWeight: '600',
+    color: '#3E2723',
+    marginBottom: 12,
+  },
+  recipientList: {
+    marginBottom: 16,
+    maxHeight: 150,
+  },
+  recipientItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  recipientAvatar: {
+    backgroundColor: '#6F4E37',
+    marginLeft: 8,
+    marginRight: 12,
+  },
+  recipientName: {
+    flex: 1,
+    color: '#3E2723',
+  },
+  messageInputDialog: {
+    marginTop: 8,
+  },
+  charCount: {
+    textAlign: 'right',
+    color: '#999',
+    marginTop: 4,
   },
 });
 

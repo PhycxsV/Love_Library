@@ -283,6 +283,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
                 id: true,
                 username: true,
                 email: true,
+                profilePhoto: true,
               },
             },
           },
