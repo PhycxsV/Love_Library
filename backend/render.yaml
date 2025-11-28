@@ -11,7 +11,7 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGIN
-        value: "*"
+        value: "https://love-library-one.vercel.app,https://love-library-krfk.vercel.app,*"
 
 databases:
   - name: love-library-db
