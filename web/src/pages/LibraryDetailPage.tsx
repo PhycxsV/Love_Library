@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -103,6 +103,7 @@ const API_URL = import.meta.env.DEV ? 'http://localhost:5000' : 'https://your-pr
 export default function LibraryDetailPage() {
   const { id: libraryId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -147,13 +148,17 @@ export default function LibraryDetailPage() {
     if (libraryId) {
       loadData();
       setupSocket();
+      // Check if we should open messages tab from notification
+      if (location.state?.openMessagesTab) {
+        setActiveTab('messages');
+      }
     }
     return () => {
       if (socket) {
         socket.disconnect();
       }
     };
-  }, [libraryId]);
+  }, [libraryId, location.state]);
 
   // Reload library data when switching to members or messages tab to get updated member list
   useEffect(() => {

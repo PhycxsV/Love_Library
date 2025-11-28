@@ -32,6 +32,14 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import PeopleIcon from '@mui/icons-material/People';
 import CodeIcon from '@mui/icons-material/Code';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import Badge from '@mui/material/Badge';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import { io, Socket } from 'socket.io-client';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,9 +62,23 @@ export default function LibraryListPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' as 'success' | 'error' });
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    message: string;
+    sender: string;
+    libraryId: string;
+    libraryName: string;
+    createdAt: string;
+  }>>([]);
+  const [notificationAnchor, setNotificationAnchor] = useState<null | HTMLElement>(null);
 
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+
+  const API_URL = import.meta.env.DEV
+    ? 'http://localhost:5000'
+    : 'https://love-library-a28m.onrender.com';
 
   useEffect(() => {
     if (user) {
@@ -68,8 +90,94 @@ export default function LibraryListPage() {
       // Clear libraries if user logs out
       setLibraries([]);
       setLoading(false);
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
     }
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
   }, [user]);
+
+  const setupSocket = () => {
+    try {
+      if (socket) {
+        socket.removeAllListeners();
+        socket.disconnect();
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const newSocket = io(API_URL, {
+        auth: { token },
+      });
+
+      newSocket.on('connect', () => {
+        console.log('Connected to socket for notifications');
+        // Join all library rooms the user is a member of
+        if (libraries.length > 0) {
+          libraries.forEach((lib) => {
+            newSocket.emit('join-library', lib.id);
+          });
+        }
+      });
+
+      newSocket.on('new-heart-message', (message: any) => {
+        // Check if current user is a recipient
+        const isRecipient = message.recipients?.some((r: any) => r.user.id === user?.id);
+        if (isRecipient && message.user.id !== user?.id) {
+          // Find the library name
+          const library = libraries.find((lib) => lib.id === message.libraryId);
+          const libraryName = library?.name || 'Unknown Library';
+          
+          // Add notification
+          setNotifications((prev) => [
+            {
+              id: message.id,
+              message: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
+              sender: message.user.username,
+              libraryId: message.libraryId,
+              libraryName,
+              createdAt: message.createdAt,
+            },
+            ...prev,
+          ]);
+
+          // Show snackbar notification
+          setSnackbar({
+            open: true,
+            message: `💕 New heart message from ${message.user.username} in ${libraryName}`,
+            severity: 'success',
+          });
+        }
+      });
+
+      setSocket(newSocket);
+    } catch (error) {
+      console.error('Socket setup error:', error);
+    }
+  };
+
+  // Update socket when libraries change
+  useEffect(() => {
+    if (socket && libraries.length > 0) {
+      libraries.forEach((lib) => {
+        socket.emit('join-library', lib.id);
+      });
+    }
+  }, [libraries, socket]);
+
+  // Setup socket after libraries are loaded
+  useEffect(() => {
+    if (user && libraries.length > 0 && !socket) {
+      setupSocket();
+    }
+  }, [libraries, user]);
 
   const loadLibraries = async () => {
     try {
@@ -192,6 +300,93 @@ export default function LibraryListPage() {
             {user?.username}
           </Typography>
           </Box>
+          <IconButton
+            color="inherit"
+            onClick={(e) => setNotificationAnchor(e.currentTarget)}
+            sx={{
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+              mr: 1,
+            }}
+            aria-label="notifications"
+          >
+            <Badge badgeContent={notifications.length} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+          <Menu
+            anchorEl={notificationAnchor}
+            open={Boolean(notificationAnchor)}
+            onClose={() => setNotificationAnchor(null)}
+            PaperProps={{
+              sx: {
+                mt: 1.5,
+                minWidth: 320,
+                maxHeight: 400,
+                borderRadius: 2,
+                backgroundColor: '#FFFBFD',
+                overflow: 'auto',
+              },
+            }}
+          >
+            {notifications.length === 0 ? (
+              <MenuItem disabled>
+                <ListItemText primary="No new notifications" secondary="You're all caught up!" />
+              </MenuItem>
+            ) : (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    setNotifications([]);
+                    setNotificationAnchor(null);
+                  }}
+                  sx={{ justifyContent: 'center', borderBottom: '1px solid rgba(0,0,0,0.1)', py: 1 }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Clear all
+                  </Typography>
+                </MenuItem>
+                {notifications.map((notification) => (
+                  <MenuItem
+                    key={notification.id}
+                    onClick={() => {
+                      setNotificationAnchor(null);
+                      navigate(`/libraries/${notification.libraryId}`, { state: { openMessagesTab: true } });
+                      // Remove this notification
+                      setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+                    }}
+                    sx={{
+                      py: 1.5,
+                      borderBottom: '1px solid rgba(0,0,0,0.05)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon>
+                      <FavoriteIcon sx={{ color: '#E91E63', fontSize: 24 }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1A1A1A' }}>
+                          {notification.sender}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {notification.message}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            {notification.libraryName}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </MenuItem>
+                ))}
+              </>
+            )}
+          </Menu>
           <IconButton 
             color="inherit" 
             onClick={logout}
