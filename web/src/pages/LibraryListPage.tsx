@@ -20,7 +20,6 @@ import {
   Avatar,
   Chip,
   IconButton,
-  CardActionArea,
   Divider,
   Paper,
   Snackbar,

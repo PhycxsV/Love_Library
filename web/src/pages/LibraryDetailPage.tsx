@@ -836,7 +836,6 @@ export default function LibraryDetailPage() {
                       return true;
                     })
                     .map((message) => {
-                    const isOwnMessage = message.user.id === user?.id;
                     const recipientNames = message.recipients?.map(r => r.user.username).join(', ') || '';
                     
                     return (
