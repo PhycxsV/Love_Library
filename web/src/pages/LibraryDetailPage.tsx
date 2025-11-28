@@ -34,6 +34,7 @@ import {
   FormControlLabel,
   Fab,
   Backdrop,
+  Badge,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -138,6 +139,7 @@ export default function LibraryDetailPage() {
   const [isHighlight, setIsHighlight] = useState(false);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
   const [welcomeView, setWelcomeView] = useState<'description' | 'highlights'>('description');
+  const [highlightsModalOpen, setHighlightsModalOpen] = useState(false);
   const [libraryDescription, setLibraryDescription] = useState<string | null>(null);
   const [highlights, setHighlights] = useState<Photo[]>([]);
   const [loadingHighlights, setLoadingHighlights] = useState(false);
@@ -251,6 +253,9 @@ export default function LibraryDetailPage() {
       setLibraryDescription(libraryRes.data.description);
       setPhotos(photosRes.data);
       setMessages(messagesRes.data);
+      
+      // Load highlights when library loads
+      loadHighlights();
       
       // Check if user needs to see welcome modal
       if (libraryRes.data.currentMember && !libraryRes.data.currentMember.hasSeenWelcome) {
@@ -525,6 +530,19 @@ export default function LibraryDetailPage() {
             <Tab label="Heart Messages" icon={<FavoriteIcon sx={{ fontSize: 18 }} />} iconPosition="start" />
             <Tab label="Members" />
           </Tabs>
+          <IconButton
+            onClick={handleOpenHighlights}
+            sx={{
+              ml: 2,
+              color: 'white',
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+            }}
+            aria-label="view highlights"
+          >
+            <Badge badgeContent={highlights.length} color="error">
+              <StarIcon />
+            </Badge>
+          </IconButton>
         </Toolbar>
       </AppBar>
 
