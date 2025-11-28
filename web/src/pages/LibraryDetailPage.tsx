@@ -90,6 +90,7 @@ interface PhotoComment extends Message {
   replyToId?: string | null;
   replyTo?: {
     id: string;
+    content: string;
     user: {
       username: string;
     };
