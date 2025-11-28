@@ -4,6 +4,11 @@ const API_URL = import.meta.env.PROD
   ? 'https://love-library-a28m.onrender.com/api'  // Production (Render)
   : 'http://localhost:5000/api';  // Local development
 
+// Debug: Log the API URL being used
+console.log('API URL:', API_URL);
+console.log('Environment:', import.meta.env.MODE);
+console.log('Is PROD:', import.meta.env.PROD);
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
