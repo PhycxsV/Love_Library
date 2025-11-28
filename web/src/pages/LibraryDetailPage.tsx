@@ -254,14 +254,10 @@ export default function LibraryDetailPage() {
       setPhotos(photosRes.data);
       setMessages(messagesRes.data);
       
-      // Load highlights when library loads
+      // Load highlights and show welcome modal every time
       loadHighlights();
-      
-      // Check if user needs to see welcome modal
-      if (libraryRes.data.currentMember && !libraryRes.data.currentMember.hasSeenWelcome) {
-        setWelcomeModalOpen(true);
-        setWelcomeView('description');
-      }
+      setWelcomeModalOpen(true);
+      setWelcomeView('description');
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -298,13 +294,8 @@ export default function LibraryDetailPage() {
     }
   };
 
-  const handleCloseWelcome = async () => {
+  const handleCloseWelcome = () => {
     setWelcomeModalOpen(false);
-    try {
-      await api.post(`/libraries/${libraryId}/mark-welcome-seen`);
-    } catch (error) {
-      console.error('Error marking welcome as seen:', error);
-    }
   };
 
   const handleRemoveMember = async (memberId: string) => {
