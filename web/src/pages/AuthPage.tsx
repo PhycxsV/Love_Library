@@ -120,10 +120,15 @@ export default function AuthPage() {
           sx={{ 
             mb: 1,
             fontWeight: 700,
+            color: '#E91E63',
             background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
+            '@supports not (-webkit-background-clip: text)': {
+              color: '#E91E63',
+              background: 'none',
+            },
           }}
         >
           Love Library
