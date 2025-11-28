@@ -531,7 +531,7 @@ export default function LibraryDetailPage() {
                   textAlign: 'center',
                 }}
               >
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#3E2723' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: '#1A1A1A' }}>
                   Photos
                 </Typography>
               </Paper>
@@ -546,7 +546,7 @@ export default function LibraryDetailPage() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#3E2723' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#1A1A1A' }}>
                     Photos
                   </Typography>
                   <Button
@@ -581,7 +581,7 @@ export default function LibraryDetailPage() {
                 }}
               >
                 <CollectionsIcon sx={{ fontSize: 80, color: '#E91E63', opacity: 0.5, mb: 2 }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#3E2723' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#1A1A1A' }}>
                   No photos yet
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
@@ -688,7 +688,7 @@ export default function LibraryDetailPage() {
                 }}
               >
                 <FavoriteBorderIcon sx={{ fontSize: 64, color: '#E91E63', opacity: 0.3, mb: 2 }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#3E2723' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#1A1A1A' }}>
                   No heart messages yet
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -800,7 +800,7 @@ export default function LibraryDetailPage() {
                               {message.user.username.charAt(0).toUpperCase()}
                             </Avatar>
                             <Box sx={{ flex: 1 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#3E2723' }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1A1A1A' }}>
                                 {message.user.username}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
@@ -821,7 +821,7 @@ export default function LibraryDetailPage() {
                             <Typography
                               variant="body1"
                               sx={{
-                                color: '#3E2723',
+                                color: '#1A1A1A',
                                 lineHeight: 1.6,
                                 wordBreak: 'break-word',
                                 display: isExpanded ? 'block' : '-webkit-box',
@@ -909,7 +909,7 @@ export default function LibraryDetailPage() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
                   {/* Recipient Selection */}
                   <Box>
-                    <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#3E2723' }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#1A1A1A' }}>
                       Choose Recipients
                     </Typography>
                     {library && library.members && (
@@ -1005,7 +1005,7 @@ export default function LibraryDetailPage() {
               p: 3,
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#3E2723', mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: '#1A1A1A', mb: 3 }}>
               Library Members
             </Typography>
             {library && library.members && library.members.length > 0 ? (
@@ -1061,7 +1061,7 @@ export default function LibraryDetailPage() {
                         {member.user.username?.charAt(0).toUpperCase() || 'U'}
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#3E2723' }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#1A1A1A' }}>
                           {member.user.username}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -1307,7 +1307,7 @@ export default function LibraryDetailPage() {
                       borderRight: { md: '1px solid rgba(0,0,0,0.12)' },
                     }}
                   >
-                    <Typography variant="body1" sx={{ color: '#3E2723', lineHeight: 1.6 }}>
+                    <Typography variant="body1" sx={{ color: '#1A1A1A', lineHeight: 1.6 }}>
                       {selectedPhoto.description}
                     </Typography>
                   </Box>
@@ -1549,7 +1549,7 @@ export default function LibraryDetailPage() {
                     <Typography 
                       variant="body1" 
                       sx={{ 
-                        color: '#3E2723', 
+                        color: '#1A1A1A', 
                         lineHeight: 2,
                         fontSize: '1.15rem',
                         mb: 3,

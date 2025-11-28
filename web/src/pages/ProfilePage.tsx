@@ -111,8 +111,9 @@ export default function ProfilePage() {
           elevation={0}
           sx={{
             backgroundColor: '#FFFBFD',
-            borderRadius: 2,
-            p: 4,
+            borderRadius: 3,
+            p: { xs: 3, sm: 4 },
+            border: '1px solid rgba(233, 30, 99, 0.1)',
           }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
@@ -120,11 +121,12 @@ export default function ProfilePage() {
               <Avatar
                 src={user?.profilePhoto}
                 sx={{
-                  width: 120,
-                  height: 120,
+                  width: { xs: 100, sm: 120 },
+                  height: { xs: 100, sm: 120 },
                   bgcolor: '#E91E63',
-                  fontSize: 48,
+                  fontSize: { xs: 40, sm: 48 },
                   fontWeight: 600,
+                  boxShadow: '0px 8px 24px rgba(233, 30, 99, 0.3)',
                 }}
               >
                 {user?.username?.charAt(0).toUpperCase()}
@@ -179,13 +181,14 @@ export default function ProfilePage() {
             <Button
               variant="contained"
               fullWidth
+              size="large"
               onClick={handleSave}
               disabled={loading || !username.trim()}
               sx={{
-                backgroundColor: '#E91E63',
-                '&:hover': { backgroundColor: '#C2185B' },
                 py: 1.5,
                 mt: 2,
+                fontSize: '1rem',
+                fontWeight: 600,
               }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}

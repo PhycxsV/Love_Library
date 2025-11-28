@@ -102,16 +102,62 @@ export default function AuthPage() {
         py: 4,
       }}
     >
-      <Container maxWidth="sm">
-        <Paper elevation={3} sx={{ p: 4, backgroundColor: '#FFFBFD' }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 2 }}>
-          PhotoShare
+      <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: { xs: 3, sm: 4, md: 5 }, 
+            backgroundColor: '#FFFBFD',
+            borderRadius: 3,
+            border: '1px solid rgba(233, 30, 99, 0.1)',
+          }}
+        >
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom 
+          align="center" 
+          sx={{ 
+            mb: 1,
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          Love Library
         </Typography>
-        <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 4 }}>
+        <Typography 
+          variant="body1" 
+          align="center" 
+          sx={{ 
+            mb: 4,
+            color: '#6B6B6B',
+            fontSize: { xs: '0.875rem', sm: '1rem' },
+          }}
+        >
           {isLogin ? 'Sign in to your account' : 'Create a new account'}
         </Typography>
 
-        <Tabs value={isLogin ? 0 : 1} onChange={handleTabChange} sx={{ mb: 3 }}>
+        <Tabs 
+          value={isLogin ? 0 : 1} 
+          onChange={handleTabChange} 
+          sx={{ 
+            mb: 3,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '1rem',
+            },
+            '& .Mui-selected': {
+              color: '#E91E63',
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#E91E63',
+            },
+          }}
+        >
           <Tab label="Sign In" />
           <Tab label="Sign Up" />
         </Tabs>
@@ -161,7 +207,14 @@ export default function AuthPage() {
             type="submit"
             fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
+            size="large"
+            sx={{ 
+              mt: 3, 
+              mb: 2,
+              py: 1.5,
+              fontSize: '1rem',
+              fontWeight: 600,
+            }}
             disabled={loading}
           >
             {isLogin ? 'Sign In' : 'Sign Up'}
