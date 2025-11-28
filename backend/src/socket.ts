@@ -167,12 +167,15 @@ export function setupSocketIO(io: Server) {
         if (photoId) {
           // Photo comment - emit to photo-specific event
           io.to(`library:${libraryId}`).emit('new-photo-comment', { photoId, comment: message });
-        } else {
+        } else if (recipientIds && recipientIds.length > 0) {
           // Heart message - emit only to sender and recipients
           const userIdsToNotify = [socket.userId!, ...recipientIds];
           userIdsToNotify.forEach((uid) => {
             io.to(`library:${libraryId}`).emit('new-heart-message', message);
           });
+        } else {
+          // Regular library message (no recipients specified)
+          io.to(`library:${libraryId}`).emit('new-message', message);
         }
       } catch (error) {
         console.error('Send message error:', error);
