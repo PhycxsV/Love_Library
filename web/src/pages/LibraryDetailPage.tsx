@@ -269,8 +269,8 @@ export default function LibraryDetailPage() {
     }
   };
 
-  const loadHighlights = async () => {
-    if (highlights.length > 0) return; // Already loaded
+  const loadHighlights = async (forceReload = false) => {
+    if (highlights.length > 0 && !forceReload) return; // Already loaded
     setLoadingHighlights(true);
     try {
       const response = await api.get(`/photos/library/${libraryId}/highlights`);
@@ -280,6 +280,12 @@ export default function LibraryDetailPage() {
     } finally {
       setLoadingHighlights(false);
     }
+  };
+
+  const handleOpenHighlights = async () => {
+    await loadHighlights(true); // Force reload to get latest highlights
+    setHighlightsModalOpen(true);
+    setCurrentHighlightIndex(0);
   };
 
   const handleNextInWelcome = () => {
@@ -2172,6 +2178,325 @@ export default function LibraryDetailPage() {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Highlights Modal - Accessible Anytime */}
+      <Dialog
+        open={highlightsModalOpen}
+        onClose={() => setHighlightsModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            maxHeight: '90vh',
+            overflow: 'hidden',
+          }
+        }}
+        BackdropProps={{
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+          }
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #E91E63 0%, #E91E63 100%)',
+            p: 4,
+            textAlign: 'center',
+            color: 'white',
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ flex: 1 }} />
+            <Box sx={{ flex: 1, textAlign: 'center' }}>
+              <StarIcon 
+                sx={{ 
+                  fontSize: 48, 
+                  mb: 1,
+                  opacity: 0.9,
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
+                }} 
+              />
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                Highlights
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9,
+                  mt: 0.5,
+                }}
+              >
+                Featured moments from this library
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={() => setHighlightsModalOpen(false)}
+              sx={{
+                color: 'white',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+        <DialogContent sx={{ p: 0, maxHeight: '70vh', overflow: 'hidden', position: 'relative' }}>
+          {loadingHighlights ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress sx={{ color: '#E91E63' }} />
+            </Box>
+          ) : highlights.length > 0 ? (
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                minHeight: '400px',
+                overflow: 'hidden',
+              }}
+              onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
+              onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
+              onTouchEnd={() => {
+                if (!touchStart || !touchEnd) return;
+                const distance = touchStart - touchEnd;
+                const isLeftSwipe = distance > 50;
+                const isRightSwipe = distance < -50;
+                
+                if (isLeftSwipe && currentHighlightIndex < highlights.length - 1) {
+                  setCurrentHighlightIndex(currentHighlightIndex + 1);
+                }
+                if (isRightSwipe && currentHighlightIndex > 0) {
+                  setCurrentHighlightIndex(currentHighlightIndex - 1);
+                }
+                
+                setTouchStart(null);
+                setTouchEnd(null);
+              }}
+            >
+              {/* Slideshow Container */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  transition: 'transform 0.3s ease-in-out',
+                  transform: `translateX(-${currentHighlightIndex * 100}%)`,
+                  height: '100%',
+                }}
+              >
+                {highlights.map((photo, index) => (
+                  <Box
+                    key={photo.id}
+                    sx={{
+                      minWidth: '100%',
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Image */}
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        width: '100%',
+                        flex: 1,
+                        minHeight: '300px',
+                        maxHeight: '500px',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                      }}
+                      onClick={() => {
+                        setHighlightsModalOpen(false);
+                        setTimeout(() => handleOpenPhoto(photo), 300);
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={photo.imageUrl}
+                        alt={photo.description || 'Highlight'}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          backgroundColor: '#000',
+                        }}
+                      />
+                      {/* Star Badge */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 16,
+                          right: 16,
+                          bgcolor: 'rgba(233, 30, 99, 0.9)',
+                          borderRadius: '50%',
+                          p: 1,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                        }}
+                      >
+                        <StarIcon sx={{ fontSize: 20, color: 'white' }} />
+                      </Box>
+                      {/* Photo Counter */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 16,
+                          left: 16,
+                          bgcolor: 'rgba(0, 0, 0, 0.6)',
+                          borderRadius: 2,
+                          px: 1.5,
+                          py: 0.5,
+                          backdropFilter: 'blur(8px)',
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
+                          {index + 1} / {highlights.length}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    {/* Caption */}
+                    {photo.description && (
+                      <Box
+                        sx={{
+                          p: 3,
+                          backgroundColor: '#FFFBFD',
+                          borderTop: '1px solid rgba(233, 30, 99, 0.1)',
+                        }}
+                      >
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            color: '#1A1A1A',
+                            lineHeight: 1.6,
+                            textAlign: 'center',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {photo.description}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Navigation Arrows */}
+              {highlights.length > 1 && (
+                <>
+                  <IconButton
+                    onClick={() => setCurrentHighlightIndex(Math.max(0, currentHighlightIndex - 1))}
+                    disabled={currentHighlightIndex === 0}
+                    sx={{
+                      position: 'absolute',
+                      left: 16,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      color: '#E91E63',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 1)',
+                      },
+                      '&.Mui-disabled': {
+                        opacity: 0.3,
+                      },
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      zIndex: 10,
+                    }}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setCurrentHighlightIndex(Math.min(highlights.length - 1, currentHighlightIndex + 1))}
+                    disabled={currentHighlightIndex === highlights.length - 1}
+                    sx={{
+                      position: 'absolute',
+                      right: 16,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      color: '#E91E63',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 1)',
+                      },
+                      '&.Mui-disabled': {
+                        opacity: 0.3,
+                      },
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      zIndex: 10,
+                    }}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </>
+              )}
+
+              {/* Dots Indicator */}
+              {highlights.length > 1 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 16,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    gap: 1,
+                    zIndex: 10,
+                  }}
+                >
+                  {highlights.map((_, index) => (
+                    <Box
+                      key={index}
+                      onClick={() => setCurrentHighlightIndex(index)}
+                      sx={{
+                        width: currentHighlightIndex === index ? 24 : 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: currentHighlightIndex === index ? '#E91E63' : 'rgba(255, 255, 255, 0.5)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <StarIcon 
+                sx={{ 
+                  fontSize: 72, 
+                  color: '#E91E63', 
+                  opacity: 0.15, 
+                  mb: 2 
+                }} 
+              />
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ fontSize: '1rem' }}
+              >
+                No highlights yet
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ mt: 1, fontSize: '0.875rem', opacity: 0.7 }}
+              >
+                Highlights will appear here when added
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
       </Dialog>
     </Box>
   );
