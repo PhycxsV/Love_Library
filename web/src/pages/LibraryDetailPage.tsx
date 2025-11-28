@@ -277,12 +277,6 @@ export default function LibraryDetailPage() {
     }
   };
 
-  const handleOpenHighlights = async () => {
-    await loadHighlights(true); // Force reload to get latest highlights
-    setHighlightsModalOpen(true);
-    setCurrentHighlightIndex(0);
-  };
-
   const handleNextInWelcome = () => {
     if (welcomeView === 'description') {
       loadHighlights();
