@@ -141,6 +141,9 @@ export default function LibraryDetailPage() {
   const [libraryDescription, setLibraryDescription] = useState<string | null>(null);
   const [highlights, setHighlights] = useState<Photo[]>([]);
   const [loadingHighlights, setLoadingHighlights] = useState(false);
+  const [currentHighlightIndex, setCurrentHighlightIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [library, setLibrary] = useState<any>(null);
   const [removingMember, setRemovingMember] = useState<string | null>(null);
 
@@ -278,6 +281,7 @@ export default function LibraryDetailPage() {
     if (welcomeView === 'description') {
       loadHighlights();
       setWelcomeView('highlights');
+      setCurrentHighlightIndex(0);
     } else {
       handleCloseWelcome();
     }
@@ -1874,76 +1878,227 @@ export default function LibraryDetailPage() {
                 Featured moments from this library
               </Typography>
             </Box>
-            <DialogContent sx={{ p: 3, maxHeight: '60vh', overflow: 'auto' }}>
+            <DialogContent sx={{ p: 0, maxHeight: '70vh', overflow: 'hidden', position: 'relative' }}>
               {loadingHighlights ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                   <CircularProgress sx={{ color: '#E91E63' }} />
                 </Box>
               ) : highlights.length > 0 ? (
-                <Grid container spacing={2.5}>
-                  {highlights.map((photo) => (
-                    <Grid item xs={6} key={photo.id}>
-                      <Card
-                        elevation={2}
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    minHeight: '400px',
+                    overflow: 'hidden',
+                  }}
+                  onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
+                  onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
+                  onTouchEnd={() => {
+                    if (!touchStart || !touchEnd) return;
+                    const distance = touchStart - touchEnd;
+                    const isLeftSwipe = distance > 50;
+                    const isRightSwipe = distance < -50;
+                    
+                    if (isLeftSwipe && currentHighlightIndex < highlights.length - 1) {
+                      setCurrentHighlightIndex(currentHighlightIndex + 1);
+                    }
+                    if (isRightSwipe && currentHighlightIndex > 0) {
+                      setCurrentHighlightIndex(currentHighlightIndex - 1);
+                    }
+                    
+                    setTouchStart(null);
+                    setTouchEnd(null);
+                  }}
+                >
+                  {/* Slideshow Container */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      transition: 'transform 0.3s ease-in-out',
+                      transform: `translateX(-${currentHighlightIndex * 100}%)`,
+                      height: '100%',
+                    }}
+                  >
+                    {highlights.map((photo, index) => (
+                      <Box
+                        key={photo.id}
                         sx={{
-                          cursor: 'pointer',
-                          borderRadius: 2,
-                          overflow: 'hidden',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                          },
-                        }}
-                        onClick={() => {
-                          handleCloseWelcome();
-                          setTimeout(() => handleOpenPhoto(photo), 300);
+                          minWidth: '100%',
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          position: 'relative',
                         }}
                       >
-                        <Box sx={{ position: 'relative' }}>
-                          <CardMedia
+                        {/* Image */}
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            width: '100%',
+                            flex: 1,
+                            minHeight: '300px',
+                            maxHeight: '500px',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                          }}
+                          onClick={() => {
+                            handleCloseWelcome();
+                            setTimeout(() => handleOpenPhoto(photo), 300);
+                          }}
+                        >
+                          <Box
                             component="img"
-                            image={photo.imageUrl}
+                            src={photo.imageUrl}
                             alt={photo.description || 'Highlight'}
                             sx={{
-                              height: 180,
-                              objectFit: 'cover',
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
+                              backgroundColor: '#000',
                             }}
                           />
+                          {/* Star Badge */}
                           <Box
                             sx={{
                               position: 'absolute',
-                              top: 8,
-                              right: 8,
+                              top: 16,
+                              right: 16,
                               bgcolor: 'rgba(233, 30, 99, 0.9)',
                               borderRadius: '50%',
-                              p: 0.5,
+                              p: 1,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                             }}
                           >
-                            <StarIcon sx={{ fontSize: 16, color: 'white' }} />
+                            <StarIcon sx={{ fontSize: 20, color: 'white' }} />
+                          </Box>
+                          {/* Photo Counter */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 16,
+                              left: 16,
+                              bgcolor: 'rgba(0, 0, 0, 0.6)',
+                              borderRadius: 2,
+                              px: 1.5,
+                              py: 0.5,
+                              backdropFilter: 'blur(8px)',
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
+                              {index + 1} / {highlights.length}
+                            </Typography>
                           </Box>
                         </Box>
+                        
+                        {/* Caption */}
                         {photo.description && (
-                          <CardContent sx={{ p: 1.5, pb: 1.5 }}>
-                            <Typography 
-                              variant="caption" 
-                              color="text.secondary" 
+                          <Box
+                            sx={{
+                              p: 3,
+                              backgroundColor: '#FFFBFD',
+                              borderTop: '1px solid rgba(233, 30, 99, 0.1)',
+                            }}
+                          >
+                            <Typography
+                              variant="body1"
                               sx={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                                fontSize: '0.75rem',
+                                color: '#1A1A1A',
+                                lineHeight: 1.6,
+                                textAlign: 'center',
+                                fontWeight: 500,
                               }}
                             >
                               {photo.description}
                             </Typography>
-                          </CardContent>
+                          </Box>
                         )}
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Navigation Arrows */}
+                  {highlights.length > 1 && (
+                    <>
+                      <IconButton
+                        onClick={() => setCurrentHighlightIndex(Math.max(0, currentHighlightIndex - 1))}
+                        disabled={currentHighlightIndex === 0}
+                        sx={{
+                          position: 'absolute',
+                          left: 16,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          color: '#E91E63',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 1)',
+                          },
+                          '&.Mui-disabled': {
+                            opacity: 0.3,
+                          },
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                          zIndex: 10,
+                        }}
+                      >
+                        <ChevronLeftIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => setCurrentHighlightIndex(Math.min(highlights.length - 1, currentHighlightIndex + 1))}
+                        disabled={currentHighlightIndex === highlights.length - 1}
+                        sx={{
+                          position: 'absolute',
+                          right: 16,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          color: '#E91E63',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 1)',
+                          },
+                          '&.Mui-disabled': {
+                            opacity: 0.3,
+                          },
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                          zIndex: 10,
+                        }}
+                      >
+                        <ChevronRightIcon />
+                      </IconButton>
+                    </>
+                  )}
+
+                  {/* Dots Indicator */}
+                  {highlights.length > 1 && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 16,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        gap: 1,
+                        zIndex: 10,
+                      }}
+                    >
+                      {highlights.map((_, index) => (
+                        <Box
+                          key={index}
+                          onClick={() => setCurrentHighlightIndex(index)}
+                          sx={{
+                            width: currentHighlightIndex === index ? 24 : 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: currentHighlightIndex === index ? '#E91E63' : 'rgba(255, 255, 255, 0.5)',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                </Box>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 6 }}>
                   <StarIcon 
