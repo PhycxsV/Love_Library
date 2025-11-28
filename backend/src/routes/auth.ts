@@ -46,10 +46,15 @@ router.post('/register', async (req, res) => {
     });
 
     // Generate token
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set!');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+    
     const expiresInValue = process.env.JWT_EXPIRES_IN || '7d';
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET,
       {
         expiresIn: expiresInValue as any
       }
