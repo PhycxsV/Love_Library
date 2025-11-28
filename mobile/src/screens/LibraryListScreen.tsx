@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   members: {
     marginTop: 8,
-    color: '#6F4E37', // Coffee Brown
+    color: '#E91E63', // Coffee Brown
   },
   empty: {
     padding: 32,

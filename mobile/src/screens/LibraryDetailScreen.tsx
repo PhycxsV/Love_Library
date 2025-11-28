@@ -57,6 +57,7 @@ export default function LibraryDetailScreen() {
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const [messageFilter, setMessageFilter] = useState<'all' | 'received' | 'sent'>('all');
 
   useEffect(() => {
     loadData();
@@ -299,6 +300,39 @@ export default function LibraryDetailScreen() {
         />
       ) : activeTab === 'messages' ? (
         <View style={styles.messagesContainer}>
+          {/* Message Filter Tabs */}
+          <Card style={styles.filterCard}>
+            <Card.Content style={styles.filterContent}>
+              <View style={styles.filterButtons}>
+                <Button
+                  mode={messageFilter === 'all' ? 'contained' : 'outlined'}
+                  onPress={() => setMessageFilter('all')}
+                  style={[styles.filterButton, messageFilter === 'all' && styles.filterButtonActive]}
+                  labelStyle={[styles.filterButtonLabel, messageFilter === 'all' && styles.filterButtonLabelActive]}
+                >
+                  All
+                </Button>
+                <Button
+                  mode={messageFilter === 'received' ? 'contained' : 'outlined'}
+                  onPress={() => setMessageFilter('received')}
+                  style={[styles.filterButton, messageFilter === 'received' && styles.filterButtonActive]}
+                  labelStyle={[styles.filterButtonLabel, messageFilter === 'received' && styles.filterButtonLabelActive]}
+                >
+                  Received
+                </Button>
+                <Button
+                  mode={messageFilter === 'sent' ? 'contained' : 'outlined'}
+                  onPress={() => setMessageFilter('sent')}
+                  style={[styles.filterButton, messageFilter === 'sent' && styles.filterButtonActive]}
+                  labelStyle={[styles.filterButtonLabel, messageFilter === 'sent' && styles.filterButtonLabelActive]}
+                >
+                  Sent
+                </Button>
+              </View>
+            </Card.Content>
+          </Card>
+          )}
+
           {messages.length === 0 ? (
             <View style={styles.empty}>
               <Text variant="headlineSmall" style={styles.emptyTitle}>
@@ -319,6 +353,40 @@ export default function LibraryDetailScreen() {
                 Send Heart Message
               </Button>
             </View>
+          ) : (() => {
+            const filteredMessages = messages.filter((message) => {
+              if (messageFilter === 'all') return true;
+              if (messageFilter === 'sent') return message.user.id === user?.id;
+              if (messageFilter === 'received') return message.user.id !== user?.id;
+              return true;
+            });
+
+            return filteredMessages.length === 0 ? (
+              <View style={styles.empty}>
+                <Text variant="headlineSmall" style={styles.emptyTitle}>
+                  💕
+                </Text>
+                <Text variant="titleMedium" style={styles.emptyText}>
+                  No {messageFilter === 'sent' ? 'sent' : messageFilter === 'received' ? 'received' : ''} messages
+                </Text>
+                <Text variant="bodyMedium" style={styles.emptySubtext}>
+                  {messageFilter === 'sent' 
+                    ? 'You haven\'t sent any heart messages yet'
+                    : messageFilter === 'received'
+                    ? 'No one has sent you heart messages yet'
+                    : 'Send a sweet message to someone special'}
+                </Text>
+                {messageFilter === 'all' && (
+                  <Button
+                    mode="contained"
+                    icon="heart"
+                    onPress={() => setShowSendDialog(true)}
+                    style={styles.sendButton}
+                  >
+                    Send Heart Message
+                  </Button>
+                )}
+              </View>
           ) : (
             <>
               {/* Header with Send Button - Only show when there are messages */}
@@ -335,8 +403,8 @@ export default function LibraryDetailScreen() {
                   </Button>
                 </Card.Content>
               </Card>
-            <FlatList
-              data={messages}
+              <FlatList
+                data={filteredMessages}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.messagesList}
               renderItem={({ item }) => {
@@ -395,7 +463,8 @@ export default function LibraryDetailScreen() {
                 }}
               />
             </>
-          )}
+          );
+          })()}
 
           {/* Send Heart Message Dialog */}
           {showSendDialog && (
@@ -603,7 +672,7 @@ const styles = StyleSheet.create({
   },
   ownMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#6F4E37', // Coffee Brown
+    backgroundColor: '#E91E63', // Coffee Brown
   },
   otherMessage: {
     alignSelf: 'flex-start',
@@ -669,20 +738,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   memberBadge: {
-    backgroundColor: 'rgba(111, 78, 55, 0.1)',
-    color: '#6F4E37',
+    backgroundColor: 'rgba(248, 187, 208, 0.2)',
+    color: '#E91E63',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     fontSize: 12,
   },
   ownerBadge: {
-    backgroundColor: '#6F4E37',
+    backgroundColor: '#E91E63',
     color: 'white',
   },
   youBadge: {
-    backgroundColor: 'rgba(111, 78, 55, 0.15)',
-    color: '#6F4E37',
+    backgroundColor: 'rgba(248, 187, 208, 0.25)',
+    color: '#E91E63',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -695,11 +764,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: 'rgba(111, 78, 55, 0.2)',
+    borderColor: 'rgba(233, 30, 99, 0.2)',
   },
   heartMessageCardExpanded: {
-    borderColor: '#6F4E37',
-    backgroundColor: 'rgba(255, 182, 193, 0.1)',
+    borderColor: '#E91E63',
+    backgroundColor: 'rgba(248, 187, 208, 0.15)',
   },
   messageHeader: {
     flexDirection: 'row',
@@ -713,7 +782,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messageAvatar: {
-    backgroundColor: '#6F4E37',
+    backgroundColor: '#E91E63',
     marginRight: 12,
   },
   messageUserDetails: {
@@ -739,7 +808,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(111, 78, 55, 0.1)',
+    borderTopColor: 'rgba(248, 187, 208, 0.2)',
   },
   recipientsText: {
     color: '#666',
@@ -770,7 +839,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sendButton: {
-    backgroundColor: '#6F4E37',
+    backgroundColor: '#E91E63',
     paddingHorizontal: 24,
   },
   messagesHeaderCard: {
@@ -783,7 +852,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   sendButtonTop: {
-    backgroundColor: '#6F4E37',
+    backgroundColor: '#E91E63',
     width: '100%',
   },
   sendButtonContent: {
@@ -820,7 +889,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   recipientAvatar: {
-    backgroundColor: '#6F4E37',
+    backgroundColor: '#E91E63',
     marginLeft: 8,
     marginRight: 12,
   },

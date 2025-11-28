@@ -90,7 +90,7 @@ export default function ProfilePage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <AppBar position="sticky" elevation={1} sx={{ backgroundColor: '#6F4E37' }}>
+      <AppBar position="sticky" elevation={0} sx={{ background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <Toolbar>
           <IconButton
             edge="start"
@@ -122,7 +122,7 @@ export default function ProfilePage() {
                 sx={{
                   width: 120,
                   height: 120,
-                  bgcolor: '#6F4E37',
+                  bgcolor: '#E91E63',
                   fontSize: 48,
                   fontWeight: 600,
                 }}
@@ -135,9 +135,9 @@ export default function ProfilePage() {
                   position: 'absolute',
                   bottom: 0,
                   right: 0,
-                  bgcolor: '#6F4E37',
+                  bgcolor: '#E91E63',
                   color: 'white',
-                  '&:hover': { bgcolor: '#5A3E2A' },
+                  '&:hover': { bgcolor: '#C2185B' },
                   border: '3px solid white',
                 }}
                 disabled={uploading}
@@ -182,8 +182,8 @@ export default function ProfilePage() {
               onClick={handleSave}
               disabled={loading || !username.trim()}
               sx={{
-                backgroundColor: '#6F4E37',
-                '&:hover': { backgroundColor: '#5A3E2A' },
+                backgroundColor: '#E91E63',
+                '&:hover': { backgroundColor: '#C2185B' },
                 py: 1.5,
                 mt: 2,
               }}

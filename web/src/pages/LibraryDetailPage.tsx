@@ -116,6 +116,7 @@ export default function LibraryDetailPage() {
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
+  const [messageFilter, setMessageFilter] = useState<'all' | 'received' | 'sent'>('all');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [uploading, setUploading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
@@ -473,25 +474,26 @@ export default function LibraryDetailPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <AppBar position="sticky" elevation={1} sx={{ backgroundColor: '#6F4E37' }}>
-        <Toolbar sx={{ px: { xs: 1, sm: 2 }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+      <AppBar position="sticky" elevation={0} sx={{ background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <Toolbar sx={{ px: { xs: 1, sm: 2 }, py: 1.5, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
           <IconButton 
             edge="start" 
             color="inherit" 
             onClick={() => navigate('/libraries')}
-            sx={{ mr: 1 }}
+            sx={{ mr: 1, '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
           >
             <ArrowBackIcon />
           </IconButton>
           {libraryName && (
             <Typography 
-              variant="h6" 
+              variant="h5" 
               sx={{ 
                 flexGrow: { xs: 0, sm: 1 },
                 mr: 2,
-                fontWeight: 600,
+                fontWeight: 700,
                 color: 'white',
                 display: { xs: 'none', sm: 'block' },
+                letterSpacing: '-0.5px',
               }}
             >
               {libraryName}
@@ -552,8 +554,8 @@ export default function LibraryDetailPage() {
                     component="label"
                     startIcon={<AddIcon />}
                     sx={{
-                      backgroundColor: '#6F4E37',
-                      '&:hover': { backgroundColor: '#5A3E2A' },
+                      backgroundColor: '#E91E63',
+                      '&:hover': { backgroundColor: '#C2185B' },
                     }}
                   >
                     Upload a photo
@@ -578,7 +580,7 @@ export default function LibraryDetailPage() {
                   borderRadius: 2,
                 }}
               >
-                <CollectionsIcon sx={{ fontSize: 80, color: '#6F4E37', opacity: 0.5, mb: 2 }} />
+                <CollectionsIcon sx={{ fontSize: 80, color: '#E91E63', opacity: 0.5, mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#3E2723' }}>
                   No photos yet
                 </Typography>
@@ -590,8 +592,8 @@ export default function LibraryDetailPage() {
                 component="label"
                 startIcon={<PhotoCameraIcon />}
                   sx={{
-                    backgroundColor: '#6F4E37',
-                    '&:hover': { backgroundColor: '#5A3E2A' },
+                    backgroundColor: '#E91E63',
+                    '&:hover': { backgroundColor: '#C2185B' },
                   }}
               >
                 Upload Photo
@@ -616,12 +618,12 @@ export default function LibraryDetailPage() {
                         flexDirection: 'column',
                         borderRadius: 2,
                         overflow: 'hidden',
-                        border: '1px solid rgba(111, 78, 55, 0.1)',
+                        border: '1px solid rgba(233, 30, 99, 0.1)',
                         transition: 'all 0.2s ease-in-out',
                         cursor: 'pointer',
                         '&:hover': {
                           transform: 'translateY(-2px)',
-                          boxShadow: '0 4px 12px rgba(111, 78, 55, 0.15)',
+                          boxShadow: '0 4px 12px rgba(233, 30, 99, 0.15)',
                         },
                       }}
                     >
@@ -656,7 +658,7 @@ export default function LibraryDetailPage() {
                               width: 20, 
                               height: 20, 
                               fontSize: 12,
-                              bgcolor: '#6F4E37',
+                              bgcolor: '#E91E63',
                             }}
                           >
                             {photo.user.username.charAt(0).toUpperCase()}
@@ -685,7 +687,7 @@ export default function LibraryDetailPage() {
                   borderRadius: 2,
                 }}
               >
-                <FavoriteBorderIcon sx={{ fontSize: 64, color: '#6F4E37', opacity: 0.3, mb: 2 }} />
+                <FavoriteBorderIcon sx={{ fontSize: 64, color: '#E91E63', opacity: 0.3, mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#3E2723' }}>
                   No heart messages yet
                 </Typography>
@@ -697,8 +699,8 @@ export default function LibraryDetailPage() {
                   startIcon={<FavoriteIcon />}
                   onClick={() => setShowSendDialog(true)}
                   sx={{
-                    backgroundColor: '#6F4E37',
-                    '&:hover': { backgroundColor: '#5A3E2A' },
+                    backgroundColor: '#E91E63',
+                    '&:hover': { backgroundColor: '#C2185B' },
                   }}
                 >
                   Send Heart Message
@@ -721,16 +723,16 @@ export default function LibraryDetailPage() {
                     startIcon={<FavoriteIcon />}
                     onClick={() => setShowSendDialog(true)}
                     sx={{
-                      backgroundColor: '#6F4E37',
+                      backgroundColor: '#E91E63',
                       px: 4,
                       py: 1.5,
                       borderRadius: 3,
                       fontSize: '1rem',
                       fontWeight: 600,
-                      boxShadow: '0 4px 12px rgba(111, 78, 55, 0.3)',
+                      boxShadow: '0 4px 12px rgba(233, 30, 99, 0.3)',
                       '&:hover': {
-                        backgroundColor: '#5A3E2A',
-                        boxShadow: '0 6px 16px rgba(111, 78, 55, 0.4)',
+                        backgroundColor: '#C2185B',
+                        boxShadow: '0 6px 16px rgba(233, 30, 99, 0.4)',
                         transform: 'translateY(-2px)',
                       },
                       transition: 'all 0.2s ease',
@@ -743,7 +745,14 @@ export default function LibraryDetailPage() {
 
                 {/* Heart Messages Grid */}
                 <Grid container spacing={2}>
-                  {messages.map((message) => {
+                  {messages
+                    .filter((message) => {
+                      if (messageFilter === 'all') return true;
+                      if (messageFilter === 'sent') return message.user.id === user?.id;
+                      if (messageFilter === 'received') return message.user.id !== user?.id;
+                      return true;
+                    })
+                    .map((message) => {
                     const isOwnMessage = message.user.id === user?.id;
                     const isExpanded = expandedMessageId === message.id;
                     const recipientNames = message.recipients?.map(r => r.user.username).join(', ') || '';
@@ -757,15 +766,15 @@ export default function LibraryDetailPage() {
                           borderRadius: 3,
                           overflow: 'hidden',
                           border: '2px solid',
-                          borderColor: isExpanded ? '#6F4E37' : 'rgba(111, 78, 55, 0.2)',
-                          background: isExpanded 
-                            ? 'linear-gradient(135deg, rgba(255, 182, 193, 0.1) 0%, rgba(255, 192, 203, 0.05) 100%)'
-                            : 'rgba(255, 255, 255, 0.95)',
+                          borderColor: isExpanded ? '#E91E63' : 'rgba(233, 30, 99, 0.2)',
+                            background: isExpanded 
+                            ? 'linear-gradient(135deg, rgba(248, 187, 208, 0.15) 0%, rgba(252, 228, 236, 0.25) 100%)'
+                            : '#FFFFFF',
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 24px rgba(111, 78, 55, 0.2)',
-                            borderColor: '#6F4E37',
+                            boxShadow: '0 8px 24px rgba(233, 30, 99, 0.2)',
+                            borderColor: '#E91E63',
                           },
                         }}
                       >
@@ -784,7 +793,7 @@ export default function LibraryDetailPage() {
                               sx={{
                                 width: 40,
                                 height: 40,
-                                bgcolor: '#6F4E37',
+                                bgcolor: '#E91E63',
                                 fontSize: 16,
                               }}
                             >
@@ -798,7 +807,7 @@ export default function LibraryDetailPage() {
                                 {new Date(message.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>
-                            <FavoriteIcon sx={{ color: '#e91e63', fontSize: 24 }} />
+                            <FavoriteIcon sx={{ color: '#F8BBD0', fontSize: 24 }} />
                           </Box>
 
                           {/* Message Preview/Full */}
@@ -827,7 +836,7 @@ export default function LibraryDetailPage() {
                           {/* Recipients */}
                           {message.recipients && message.recipients.length > 0 && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                              <PersonIcon sx={{ fontSize: 16, color: '#6F4E37', opacity: 0.7 }} />
+                              <PersonIcon sx={{ fontSize: 16, color: '#E91E63', opacity: 0.7 }} />
                               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                                 To: {recipientNames}
                               </Typography>
@@ -883,7 +892,7 @@ export default function LibraryDetailPage() {
             >
               <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <FavoriteIcon sx={{ color: '#e91e63' }} />
+                  <FavoriteIcon sx={{ color: '#F8BBD0' }} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Send Heart Message
                   </Typography>
@@ -921,9 +930,9 @@ export default function LibraryDetailPage() {
                                     }
                                   }}
                                   sx={{
-                                    color: '#6F4E37',
+                                    color: '#E91E63',
                                     '&.Mui-checked': {
-                                      color: '#e91e63',
+                                      color: '#E91E63',
                                     },
                                   }}
                                 />
@@ -932,7 +941,7 @@ export default function LibraryDetailPage() {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                   <Avatar
                                     src={member.user.profilePhoto || undefined}
-                                    sx={{ width: 24, height: 24, bgcolor: '#6F4E37', fontSize: 12 }}
+                                    sx={{ width: 24, height: 24, bgcolor: '#E91E63', fontSize: 12 }}
                                   >
                                     {member.user.username.charAt(0).toUpperCase()}
                                   </Avatar>
@@ -977,8 +986,8 @@ export default function LibraryDetailPage() {
                   disabled={!messageText.trim() || selectedRecipients.length === 0}
                   startIcon={<FavoriteIcon />}
                   sx={{
-                    backgroundColor: '#6F4E37',
-                    '&:hover': { backgroundColor: '#5A3E2A' },
+                    backgroundColor: '#E91E63',
+                    '&:hover': { backgroundColor: '#C2185B' },
                     px: 3,
                   }}
                 >
@@ -1010,12 +1019,12 @@ export default function LibraryDetailPage() {
                     <ListItem
                       key={member.id}
                       sx={{
-                        border: '1px solid rgba(111, 78, 55, 0.1)',
+                        border: '1px solid rgba(233, 30, 99, 0.1)',
                         borderRadius: 2,
                         mb: 2,
                         bgcolor: 'white',
                         '&:hover': {
-                          bgcolor: 'rgba(111, 78, 55, 0.02)',
+                          bgcolor: 'rgba(233, 30, 99, 0.02)',
                         },
                       }}
                       secondaryAction={
@@ -1042,7 +1051,7 @@ export default function LibraryDetailPage() {
                     >
                       <Avatar
                         sx={{
-                          bgcolor: '#6F4E37',
+                          bgcolor: '#E91E63',
                           mr: 2,
                           width: 48,
                           height: 48,
@@ -1063,8 +1072,8 @@ export default function LibraryDetailPage() {
                             label={isOwner ? 'Owner' : 'Member'}
                             size="small"
                             sx={{
-                              bgcolor: isOwner ? '#6F4E37' : 'rgba(111, 78, 55, 0.1)',
-                              color: isOwner ? 'white' : '#6F4E37',
+                              bgcolor: isOwner ? '#E91E63' : 'rgba(233, 30, 99, 0.1)',
+                              color: isOwner ? 'white' : '#E91E63',
                               fontWeight: 500,
                               height: 20,
                               fontSize: '0.7rem',
@@ -1075,8 +1084,8 @@ export default function LibraryDetailPage() {
                               label="You"
                               size="small"
                               sx={{
-                                bgcolor: 'rgba(111, 78, 55, 0.15)',
-                                color: '#6F4E37',
+                                bgcolor: 'rgba(233, 30, 99, 0.15)',
+                                color: '#E91E63',
                                 fontWeight: 500,
                                 height: 20,
                                 fontSize: '0.7rem',
@@ -1167,7 +1176,7 @@ export default function LibraryDetailPage() {
                 <Checkbox
                   checked={isHighlight}
                   onChange={(e) => setIsHighlight(e.target.checked)}
-                  icon={<StarIcon sx={{ color: 'rgba(111, 78, 55, 0.3)' }} />}
+                  icon={<StarIcon sx={{ color: 'rgba(233, 30, 99, 0.3)' }} />}
                   checkedIcon={<StarIcon sx={{ color: '#D4AF37' }} />}
                 />
               }
@@ -1197,8 +1206,8 @@ export default function LibraryDetailPage() {
             variant="contained"
             disabled={uploading || !selectedFile}
             sx={{
-              backgroundColor: '#6F4E37',
-              '&:hover': { backgroundColor: '#5A3E2A' },
+              backgroundColor: '#E91E63',
+              '&:hover': { backgroundColor: '#C2185B' },
               px: 3,
             }}
           >
@@ -1233,7 +1242,7 @@ export default function LibraryDetailPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Avatar
                   src={selectedPhoto.user.profilePhoto || undefined}
-                  sx={{ width: 32, height: 32, bgcolor: '#6F4E37', fontSize: 14 }}
+                  sx={{ width: 32, height: 32, bgcolor: '#E91E63', fontSize: 14 }}
                 >
                   {selectedPhoto.user.username.charAt(0).toUpperCase()}
                 </Avatar>
@@ -1328,7 +1337,7 @@ export default function LibraryDetailPage() {
                     </Box>
                   ) : photoComments.length === 0 ? (
                     <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <CommentIcon sx={{ fontSize: 48, color: 'rgba(111, 78, 55, 0.3)', mb: 1 }} />
+                      <CommentIcon sx={{ fontSize: 48, color: 'rgba(233, 30, 99, 0.3)', mb: 1 }} />
                       <Typography variant="body2" color="text.secondary">
                         No comments yet. Be the first to comment!
                       </Typography>
@@ -1343,7 +1352,7 @@ export default function LibraryDetailPage() {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                 <Avatar
                                   src={comment.user.profilePhoto || undefined}
-                                  sx={{ width: 24, height: 24, bgcolor: '#6F4E37', fontSize: 12 }}
+                                  sx={{ width: 24, height: 24, bgcolor: '#E91E63', fontSize: 12 }}
                                 >
                                   {comment.user.username.charAt(0).toUpperCase()}
                                 </Avatar>
@@ -1363,7 +1372,7 @@ export default function LibraryDetailPage() {
                                     ml: 4,
                                     mb: 0.5,
                                     pl: 1.5,
-                                    borderLeft: '2px solid rgba(111, 78, 55, 0.2)',
+                                    borderLeft: '2px solid rgba(233, 30, 99, 0.2)',
                                   }}
                                 >
                                   <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -1381,7 +1390,7 @@ export default function LibraryDetailPage() {
                                   sx={{ 
                                     p: 0.5,
                                     color: 'text.secondary',
-                                    '&:hover': { color: '#6F4E37' }
+                                    '&:hover': { color: '#E91E63' }
                                   }}
                                 >
                                   <ReplyIcon sx={{ fontSize: 16 }} />
@@ -1402,7 +1411,7 @@ export default function LibraryDetailPage() {
                       sx={{
                         mb: 1,
                         p: 1,
-                        bgcolor: 'rgba(111, 78, 55, 0.08)',
+                        bgcolor: 'rgba(233, 30, 99, 0.08)',
                         borderRadius: 1,
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -1410,7 +1419,7 @@ export default function LibraryDetailPage() {
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ReplyIcon sx={{ fontSize: 16, color: '#6F4E37' }} />
+                        <ReplyIcon sx={{ fontSize: 16, color: '#E91E63' }} />
                         <Typography variant="caption" color="text.secondary">
                           Replying to <strong>{replyingTo.user.username}</strong>
                         </Typography>
@@ -1441,11 +1450,11 @@ export default function LibraryDetailPage() {
                       onClick={handleSendComment}
                       disabled={!commentText.trim() || !socket}
                       sx={{
-                        backgroundColor: '#6F4E37',
+                        backgroundColor: '#E91E63',
                         color: 'white',
-                        '&:hover': { backgroundColor: '#5A3E2A' },
+                        '&:hover': { backgroundColor: '#C2185B' },
                         '&.Mui-disabled': {
-                          backgroundColor: 'rgba(111, 78, 55, 0.3)',
+                          backgroundColor: 'rgba(233, 30, 99, 0.3)',
                           color: 'rgba(255, 255, 255, 0.5)',
                         },
                       }}
@@ -1499,7 +1508,7 @@ export default function LibraryDetailPage() {
           <>
             <Box
               sx={{
-                background: 'linear-gradient(135deg, #6F4E37 0%, #8B6F47 100%)',
+                background: 'linear-gradient(135deg, #E91E63 0%, #E91E63 100%)',
                 p: 4,
                 textAlign: 'center',
                 color: 'white',
@@ -1564,7 +1573,7 @@ export default function LibraryDetailPage() {
                             width: 8,
                             height: 8,
                             borderRadius: '50%',
-                            bgcolor: '#6F4E37',
+                            bgcolor: '#E91E63',
                             opacity: 0.3,
                           }}
                         />
@@ -1576,7 +1585,7 @@ export default function LibraryDetailPage() {
                     <LibraryBooksIcon 
                       sx={{ 
                         fontSize: 48, 
-                        color: '#6F4E37', 
+                        color: '#E91E63', 
                         opacity: 0.2, 
                         mb: 2 
                       }} 
@@ -1601,7 +1610,7 @@ export default function LibraryDetailPage() {
                 variant="contained"
                 endIcon={<ArrowForwardIcon />}
                 sx={{
-                  backgroundColor: '#6F4E37',
+                  backgroundColor: '#E91E63',
                   color: 'white',
                   px: 4,
                   py: 1.2,
@@ -1609,10 +1618,10 @@ export default function LibraryDetailPage() {
                   textTransform: 'none',
                   fontSize: '1rem',
                   fontWeight: 600,
-                  boxShadow: '0 4px 12px rgba(111, 78, 55, 0.3)',
+                  boxShadow: '0 4px 12px rgba(233, 30, 99, 0.3)',
                   '&:hover': { 
-                    backgroundColor: '#5A3E2A',
-                    boxShadow: '0 6px 16px rgba(111, 78, 55, 0.4)',
+                    backgroundColor: '#C2185B',
+                    boxShadow: '0 6px 16px rgba(233, 30, 99, 0.4)',
                     transform: 'translateY(-1px)',
                   },
                   transition: 'all 0.2s ease',
@@ -1626,7 +1635,7 @@ export default function LibraryDetailPage() {
           <>
             <Box
               sx={{
-                background: 'linear-gradient(135deg, #6F4E37 0%, #8B6F47 100%)',
+                background: 'linear-gradient(135deg, #E91E63 0%, #E91E63 100%)',
                 p: 3,
                 textAlign: 'center',
                 color: 'white',
@@ -1662,7 +1671,7 @@ export default function LibraryDetailPage() {
             <DialogContent sx={{ p: 3, maxHeight: '60vh', overflow: 'auto' }}>
               {loadingHighlights ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-                  <CircularProgress sx={{ color: '#6F4E37' }} />
+                  <CircularProgress sx={{ color: '#E91E63' }} />
                 </Box>
               ) : highlights.length > 0 ? (
                 <Grid container spacing={2.5}>
@@ -1700,7 +1709,7 @@ export default function LibraryDetailPage() {
                               position: 'absolute',
                               top: 8,
                               right: 8,
-                              bgcolor: 'rgba(111, 78, 55, 0.9)',
+                              bgcolor: 'rgba(233, 30, 99, 0.9)',
                               borderRadius: '50%',
                               p: 0.5,
                             }}
@@ -1734,7 +1743,7 @@ export default function LibraryDetailPage() {
                   <StarIcon 
                     sx={{ 
                       fontSize: 72, 
-                      color: '#6F4E37', 
+                      color: '#E91E63', 
                       opacity: 0.15, 
                       mb: 2 
                     }} 
@@ -1762,7 +1771,7 @@ export default function LibraryDetailPage() {
                 variant="contained"
                 startIcon={<CheckCircleIcon />}
                 sx={{
-                  backgroundColor: '#6F4E37',
+                  backgroundColor: '#E91E63',
                   color: 'white',
                   px: 4,
                   py: 1.2,
@@ -1770,10 +1779,10 @@ export default function LibraryDetailPage() {
                   textTransform: 'none',
                   fontSize: '1rem',
                   fontWeight: 600,
-                  boxShadow: '0 4px 12px rgba(111, 78, 55, 0.3)',
+                  boxShadow: '0 4px 12px rgba(233, 30, 99, 0.3)',
                   '&:hover': { 
-                    backgroundColor: '#5A3E2A',
-                    boxShadow: '0 6px 16px rgba(111, 78, 55, 0.4)',
+                    backgroundColor: '#C2185B',
+                    boxShadow: '0 6px 16px rgba(233, 30, 99, 0.4)',
                     transform: 'translateY(-1px)',
                   },
                   transition: 'all 0.2s ease',

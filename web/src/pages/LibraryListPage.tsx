@@ -137,23 +137,25 @@ export default function LibraryListPage() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar 
         position="sticky" 
-        elevation={1}
+        elevation={0}
         sx={{ 
-          backgroundColor: '#6F4E37',
+          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
-        <Toolbar sx={{ py: 1.5, px: { xs: 2, sm: 3 } }}>
-          <LibraryBooksIcon sx={{ mr: 2, fontSize: 28, color: 'white' }} />
+        <Toolbar sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
+          <LibraryBooksIcon sx={{ mr: 2, fontSize: 32, color: 'white' }} />
           <Typography 
-            variant="h6" 
+            variant="h5" 
             component="div" 
             sx={{ 
               flexGrow: 1,
-              fontWeight: 600,
+              fontWeight: 700,
               color: 'white',
+              letterSpacing: '-0.5px',
             }}
           >
-            PhotoShare
+            Love Library
           </Typography>
           <Box 
             sx={{ 
@@ -203,59 +205,53 @@ export default function LibraryListPage() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ flex: 1, py: 4, px: { xs: 2, sm: 3 } }}>
-        <Paper
-          elevation={0}
-          sx={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: 2,
-            p: 3,
-            mb: 3,
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-          }}
-        >
+      <Container maxWidth="lg" sx={{ flex: 1, py: { xs: 3, sm: 4, md: 5 }, px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ mb: 4 }}>
           <Typography 
-            variant="h4" 
+            variant="h3" 
             component="h1" 
             sx={{ 
               fontWeight: 700,
-              mb: 0.5,
-              color: '#3E2723',
+              mb: 1,
+              color: '#1A1A1A',
+              fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' },
             }}
           >
-          My Libraries
-        </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: '#5D4037',
-            }}
-          >
-            Manage your shared photo libraries
+            My Libraries
           </Typography>
-        </Paper>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: '#6B6B6B',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+            }}
+          >
+            Create and manage your shared photo libraries
+          </Typography>
+        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-            <CircularProgress size={60} sx={{ color: '#6F4E37' }} />
+            <CircularProgress size={60} sx={{ color: '#E91E63' }} />
           </Box>
         ) : libraries.length === 0 ? (
           <Paper
             elevation={0}
             sx={{
               textAlign: 'center',
-              py: 8,
+              py: { xs: 6, sm: 8 },
               px: 4,
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: 2,
-              border: '2px dashed rgba(111, 78, 55, 0.2)',
+              backgroundColor: '#FFFFFF',
+              borderRadius: 3,
+              border: '2px dashed rgba(139, 111, 71, 0.2)',
+              boxShadow: '0px 4px 16px rgba(0,0,0,0.08)',
             }}
           >
             <LibraryBooksIcon 
               sx={{ 
-                fontSize: 80, 
-                color: '#6F4E37',
-                opacity: 0.5,
+                fontSize: { xs: 64, sm: 80 }, 
+                color: '#E91E63',
+                opacity: 0.4,
                 mb: 2 
               }} 
             />
@@ -264,15 +260,20 @@ export default function LibraryListPage() {
               sx={{ 
                 fontWeight: 600,
                 mb: 1,
-                color: '#3E2723',
+                color: '#1A1A1A',
               }}
             >
               No libraries yet
             </Typography>
             <Typography 
               variant="body1" 
-              color="text.secondary"
-              sx={{ mb: 3, maxWidth: 400, mx: 'auto' }}
+              sx={{ 
+                color: '#6B6B6B',
+                mb: 4, 
+                maxWidth: 400, 
+                mx: 'auto',
+                lineHeight: 1.6,
+              }}
             >
               Create a new library or join one with a code to get started sharing memories!
             </Typography>
@@ -281,10 +282,9 @@ export default function LibraryListPage() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => setCreateDialogOpen(true)}
+                size="large"
                 sx={{
-                  backgroundColor: '#6F4E37',
-                  '&:hover': { backgroundColor: '#5A3E2A' },
-                  px: 3,
+                  px: 4,
                   py: 1.5,
                 }}
               >
@@ -294,14 +294,16 @@ export default function LibraryListPage() {
                 variant="outlined"
                 startIcon={<PersonAddIcon />}
                 onClick={() => setJoinDialogOpen(true)}
+                size="large"
                 sx={{
-                  borderColor: '#6F4E37',
-                  color: '#6F4E37',
+                  borderColor: '#E91E63',
+                  color: '#E91E63',
                   '&:hover': { 
-                    borderColor: '#5A3E2A',
-                    backgroundColor: 'rgba(111, 78, 55, 0.08)',
+                    borderColor: '#C2185B',
+                    backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                    borderWidth: 2,
                   },
-                  px: 3,
+                  px: 4,
                   py: 1.5,
                 }}
               >
@@ -310,7 +312,7 @@ export default function LibraryListPage() {
           </Box>
           </Paper>
         ) : (
-          <Grid container spacing={2.5}>
+          <Grid container spacing={3}>
           {libraries.map((library) => (
             <Grid item xs={12} sm={6} md={4} key={library.id}>
               <Card
@@ -319,27 +321,25 @@ export default function LibraryListPage() {
                   display: 'flex',
                   flexDirection: 'column',
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 2,
+                  borderRadius: 3,
                   overflow: 'hidden',
-                  border: '1px solid rgba(111, 78, 55, 0.1)',
-                  transition: 'all 0.2s ease-in-out',
+                  border: '1px solid rgba(0, 0, 0, 0.06)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
                   '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(111, 78, 55, 0.15)',
-                    borderColor: 'rgba(111, 78, 55, 0.3)',
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0px 12px 32px rgba(139, 111, 71, 0.2)',
+                    borderColor: 'rgba(139, 111, 71, 0.3)',
                   },
                 }}
-              >
-                  <CardActionArea
                 onClick={() => navigate(`/libraries/${library.id}`)}
-                    sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
               >
                     <Box
                       sx={{
-                        backgroundColor: '#6F4E37',
+                        background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
                         color: 'white',
-                        p: 2.5,
-                        minHeight: 120,
+                        p: 3,
+                        minHeight: { xs: 100, sm: 120 },
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
@@ -354,6 +354,7 @@ export default function LibraryListPage() {
                             mb: 1,
                             color: 'white',
                             lineHeight: 1.2,
+                            fontSize: { xs: '1.25rem', sm: '1.5rem' },
                           }}
                         >
                     {library.name}
@@ -368,6 +369,7 @@ export default function LibraryListPage() {
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
+                              lineHeight: 1.5,
                             }}
                           >
                       {library.description}
@@ -375,31 +377,31 @@ export default function LibraryListPage() {
                   )}
                       </Box>
                     </Box>
-                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
+                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CodeIcon sx={{ fontSize: 18, color: '#6F4E37' }} />
-                          <Typography variant="body2" sx={{ color: '#5D4037', fontWeight: 500 }}>
-                            Code: <strong style={{ color: '#6F4E37', letterSpacing: 1 }}>{library.code}</strong>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <CodeIcon sx={{ fontSize: 20, color: '#E91E63' }} />
+                          <Typography variant="body2" sx={{ color: '#6B6B6B', fontWeight: 500 }}>
+                            Code: <strong style={{ color: '#E91E63', letterSpacing: 1, fontSize: '1.1em' }}>{library.code}</strong>
                   </Typography>
                         </Box>
-                        <Divider sx={{ borderColor: 'rgba(111, 78, 55, 0.1)' }} />
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <PeopleIcon sx={{ fontSize: 18, color: '#6F4E37' }} />
+                        <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.06)' }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <PeopleIcon sx={{ fontSize: 20, color: '#E91E63' }} />
                           <Chip
                             label={`${library.members.length} member${library.members.length !== 1 ? 's' : ''}`}
                             size="small"
                             sx={{
-                              backgroundColor: 'rgba(111, 78, 55, 0.08)',
-                              color: '#6F4E37',
-                              fontWeight: 500,
-                              border: '1px solid rgba(111, 78, 55, 0.15)',
+                              backgroundColor: 'rgba(248, 187, 208, 0.3)',
+                              color: '#E91E63',
+                              fontWeight: 600,
+                              border: '1px solid rgba(248, 187, 208, 0.5)',
+                              height: 28,
                             }}
                           />
                         </Box>
                       </Box>
                 </CardContent>
-                  </CardActionArea>
               </Card>
             </Grid>
           ))}
@@ -408,15 +410,20 @@ export default function LibraryListPage() {
       </Container>
 
       {libraries.length > 0 && (
-        <Box sx={{ position: 'fixed', bottom: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, right: { xs: 16, sm: 24 }, display: 'flex', flexDirection: 'column', gap: 2, zIndex: 1000 }}>
       <Fab
         color="primary"
             aria-label="create library"
         onClick={() => setCreateDialogOpen(true)}
+            size="large"
             sx={{
-              backgroundColor: '#6F4E37',
-              '&:hover': { backgroundColor: '#5A3E2A' },
-              boxShadow: 3,
+              background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+              '&:hover': { 
+                background: 'linear-gradient(135deg, #F06292 0%, #E91E63 100%)',
+                transform: 'scale(1.05)',
+              },
+              boxShadow: '0px 8px 24px rgba(233, 30, 99, 0.4)',
+              transition: 'all 0.3s ease',
             }}
       >
         <AddIcon />
@@ -425,10 +432,15 @@ export default function LibraryListPage() {
         color="secondary"
             aria-label="join library"
         onClick={() => setJoinDialogOpen(true)}
+            size="large"
             sx={{
-              backgroundColor: '#D4A574',
-              '&:hover': { backgroundColor: '#B8935F' },
-              boxShadow: 3,
+              background: 'linear-gradient(135deg, #F8BBD0 0%, #F48FB1 100%)',
+              '&:hover': { 
+                background: 'linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%)',
+                transform: 'scale(1.05)',
+              },
+              boxShadow: '0px 8px 24px rgba(248, 187, 208, 0.4)',
+              transition: 'all 0.3s ease',
             }}
       >
         <PersonAddIcon />
@@ -445,7 +457,7 @@ export default function LibraryListPage() {
           sx: { borderRadius: 3 }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, fontSize: '1.5rem' }}>
+        <DialogTitle sx={{ pb: 2, fontWeight: 700, fontSize: '1.5rem', color: '#1A1A1A' }}>
           Create New Library
         </DialogTitle>
         <DialogContent>
@@ -483,10 +495,9 @@ export default function LibraryListPage() {
             onClick={handleCreateLibrary} 
             disabled={!libraryName.trim() || creating}
             variant="contained"
+            size="large"
             sx={{
-              backgroundColor: '#6F4E37',
-              '&:hover': { backgroundColor: '#5A3E2A' },
-              px: 3,
+              px: 4,
             }}
           >
             {creating ? <CircularProgress size={20} color="inherit" /> : 'Create'}
@@ -503,7 +514,7 @@ export default function LibraryListPage() {
           sx: { borderRadius: 3 }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, fontSize: '1.5rem' }}>
+        <DialogTitle sx={{ pb: 2, fontWeight: 700, fontSize: '1.5rem', color: '#1A1A1A' }}>
           Join Library
         </DialogTitle>
         <DialogContent>
@@ -547,10 +558,9 @@ export default function LibraryListPage() {
             onClick={handleJoinLibrary} 
             disabled={!joinCode.trim() || joinCode.length !== 6 || joining}
             variant="contained"
+            size="large"
             sx={{
-              backgroundColor: '#6F4E37',
-              '&:hover': { backgroundColor: '#5A3E2A' },
-              px: 3,
+              px: 4,
             }}
           >
             {joining ? <CircularProgress size={20} color="inherit" /> : 'Join'}

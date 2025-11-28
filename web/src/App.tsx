@@ -20,11 +20,8 @@ function App() {
     <div
       style={{
         minHeight: '100vh',
-        backgroundImage: 'url(/background.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
+        backgroundColor: '#FAFAFA',
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
       }}
     >
       <Routes>
