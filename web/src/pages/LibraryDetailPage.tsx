@@ -119,8 +119,6 @@ export default function LibraryDetailPage() {
   const [messageFilter, setMessageFilter] = useState<'all' | 'received' | 'sent'>('all');
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [showMessageModal, setShowMessageModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [uploading, setUploading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
