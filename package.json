@@ -1,0 +1,23 @@
+{
+  "name": "love-library",
+  "version": "1.0.0",
+  "description": "Love Library - Shared Diary & Photo Library App",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:web\"",
+    "start:backend": "cd backend && npm run dev",
+    "start:web": "cd web && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../web && npm install",
+    "setup": "npm run install:all && cd backend && npx prisma generate"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
+
+
+
+
+
+
+

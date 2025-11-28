@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  password    String
+  profilePhoto String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  libraries LibraryMember[]
+  messages  Message[]
+  photos    Photo[]
+}
+
+model Library {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique // Join code for the library
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String   // User ID who created it
+
+  // Relations
+  members  LibraryMember[]
+  photos   Photo[]
+  messages Message[]
+}
+
+model LibraryMember {
+  id            String   @id @default(cuid())
+  libraryId     String
+  userId        String
+  role          String   @default("member") // "owner" or "member"
+  joinedAt      DateTime @default(now())
+  hasSeenWelcome Boolean @default(false) // Track if user has seen welcome modal
+
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([libraryId, userId])
+  @@index([libraryId])
+  @@index([userId])
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  libraryId   String
+  userId      String
+  imageUrl    String   // Cloudinary URL
+  description String?
+  isHighlight Boolean  @default(false) // Whether this photo is a highlight
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  library Library  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments Message[] // Comments on this photo
+
+  @@index([libraryId])
+  @@index([userId])
+  @@index([isHighlight])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  libraryId String
+  photoId   String?  // Optional - if set, this is a comment on a photo
+  replyToId String?  // Optional - if set, this is a reply to another comment
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  library Library  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  photo   Photo?   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade)
+  replies Message[] @relation("MessageReplies")
+
+  @@index([libraryId])
+  @@index([userId])
+  @@index([photoId])
+  @@index([replyToId])
+}
+
+

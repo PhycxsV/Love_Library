@@ -1,0 +1,1556 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  TextField,
+  Paper,
+  Grid,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Tabs,
+  Tab,
+  ImageList,
+  ImageListItem,
+  List,
+  ListItem,
+  Avatar,
+  CircularProgress,
+  Card,
+  CardMedia,
+  CardContent,
+  Chip,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogActions,
+  Divider,
+  Checkbox,
+  FormControlLabel,
+  Fab,
+  Backdrop,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import CollectionsIcon from '@mui/icons-material/Collections';
+import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
+import CommentIcon from '@mui/icons-material/Comment';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ReplyIcon from '@mui/icons-material/Reply';
+import StarIcon from '@mui/icons-material/Star';
+import AddIcon from '@mui/icons-material/Add';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import api from '../config/api';
+import { useAuth } from '../context/AuthContext';
+import { io, Socket } from 'socket.io-client';
+
+interface Photo {
+  id: string;
+  imageUrl: string;
+  description?: string;
+  isHighlight?: boolean;
+  user: {
+    id: string;
+    username: string;
+    profilePhoto?: string | null;
+  };
+  createdAt: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  user: {
+    id: string;
+    username: string;
+    profilePhoto?: string | null;
+  };
+  createdAt: string;
+}
+
+interface PhotoComment extends Message {
+  photoId?: string;
+  replyToId?: string | null;
+  replyTo?: {
+    id: string;
+    user: {
+      username: string;
+    };
+  } | null;
+}
+
+const API_URL = import.meta.env.DEV ? 'http://localhost:5000' : 'https://your-production-api.com';
+
+export default function LibraryDetailPage() {
+  const { id: libraryId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageText, setMessageText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'members'>('photos');
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [uploading, setUploading] = useState(false);
+  const [libraryName, setLibraryName] = useState('');
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [photoComments, setPhotoComments] = useState<PhotoComment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<PhotoComment | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+  const selectedPhotoRef = useRef<Photo | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoDescription, setPhotoDescription] = useState('');
+  const [isHighlight, setIsHighlight] = useState(false);
+  const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
+  const [welcomeView, setWelcomeView] = useState<'description' | 'highlights'>('description');
+  const [libraryDescription, setLibraryDescription] = useState<string | null>(null);
+  const [highlights, setHighlights] = useState<Photo[]>([]);
+  const [loadingHighlights, setLoadingHighlights] = useState(false);
+  const [library, setLibrary] = useState<any>(null);
+  const [removingMember, setRemovingMember] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (libraryId) {
+      loadData();
+      setupSocket();
+    }
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [libraryId]);
+
+  // Reload library data when switching to members tab to get updated member list
+  useEffect(() => {
+    if (activeTab === 'members' && libraryId) {
+      const reloadLibrary = async () => {
+        try {
+          const libraryRes = await api.get(`/libraries/${libraryId}`);
+          setLibrary(libraryRes.data);
+        } catch (error) {
+          console.error('Error reloading library data:', error);
+        }
+      };
+      reloadLibrary();
+    }
+  }, [activeTab, libraryId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [photoComments]);
+
+  const setupSocket = () => {
+    try {
+      // Disconnect existing socket if any
+      if (socket) {
+        socket.removeAllListeners();
+        socket.disconnect();
+      }
+
+      const token = localStorage.getItem('token');
+      const newSocket = io(API_URL, {
+        auth: { token },
+      });
+
+      newSocket.on('connect', () => {
+        newSocket.emit('join-library', libraryId);
+      });
+
+      newSocket.on('new-message', (message: Message) => {
+        setMessages((prev) => {
+          // Check if message already exists to prevent duplicates
+          const exists = prev.some(m => m.id === message.id);
+          if (exists) return prev;
+          return [...prev, message];
+        });
+      });
+
+      newSocket.on('new-photo-comment', (data: { photoId: string; comment: PhotoComment }) => {
+        // Use ref to get current selectedPhoto value
+        if (selectedPhotoRef.current && selectedPhotoRef.current.id === data.photoId) {
+          setPhotoComments((prev) => {
+            // Check if comment already exists to prevent duplicates
+            const exists = prev.some(c => c.id === data.comment.id);
+            if (exists) return prev;
+            return [...prev, data.comment];
+          });
+        }
+      });
+
+      setSocket(newSocket);
+    } catch (error) {
+      console.error('Socket setup error:', error);
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      const [libraryRes, photosRes, messagesRes] = await Promise.all([
+        api.get(`/libraries/${libraryId}`),
+        api.get(`/photos/library/${libraryId}`),
+        api.get(`/messages/library/${libraryId}`),
+      ]);
+      setLibrary(libraryRes.data);
+      setLibraryName(libraryRes.data.name);
+      setLibraryDescription(libraryRes.data.description);
+      setPhotos(photosRes.data);
+      setMessages(messagesRes.data);
+      
+      // Check if user needs to see welcome modal
+      if (libraryRes.data.currentMember && !libraryRes.data.currentMember.hasSeenWelcome) {
+        setWelcomeModalOpen(true);
+        setWelcomeView('description');
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadHighlights = async () => {
+    if (highlights.length > 0) return; // Already loaded
+    setLoadingHighlights(true);
+    try {
+      const response = await api.get(`/photos/library/${libraryId}/highlights`);
+      setHighlights(response.data);
+    } catch (error) {
+      console.error('Error loading highlights:', error);
+    } finally {
+      setLoadingHighlights(false);
+    }
+  };
+
+  const handleNextInWelcome = () => {
+    if (welcomeView === 'description') {
+      loadHighlights();
+      setWelcomeView('highlights');
+    } else {
+      handleCloseWelcome();
+    }
+  };
+
+  const handleCloseWelcome = async () => {
+    setWelcomeModalOpen(false);
+    try {
+      await api.post(`/libraries/${libraryId}/mark-welcome-seen`);
+    } catch (error) {
+      console.error('Error marking welcome as seen:', error);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!window.confirm('Are you sure you want to remove this member from the library?')) {
+      return;
+    }
+
+    setRemovingMember(memberId);
+    try {
+      await api.delete(`/libraries/${libraryId}/members/${memberId}`);
+      // Reload library data to get updated members list
+      const libraryRes = await api.get(`/libraries/${libraryId}`);
+      setLibrary(libraryRes.data);
+      setSnackbar({ open: true, message: 'Member removed successfully', severity: 'success' });
+    } catch (error: any) {
+      console.error('Error removing member:', error);
+      setSnackbar({ 
+        open: true, 
+        message: error.response?.data?.error || 'Failed to remove member',
+        severity: 'error' 
+      });
+    } finally {
+      setRemovingMember(null);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setSnackbar({ open: true, message: 'File size must be less than 10MB', severity: 'error' });
+      e.target.value = '';
+      return;
+    }
+
+    // Create preview URL
+    const url = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setPreviewUrl(url);
+    setUploadModalOpen(true);
+    e.target.value = '';
+  };
+
+  const handleCloseUploadModal = () => {
+    setUploadModalOpen(false);
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    setPhotoDescription('');
+    setIsHighlight(false);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+      formData.append('libraryId', libraryId!);
+      if (photoDescription.trim()) {
+        formData.append('description', photoDescription.trim());
+      }
+      formData.append('isHighlight', isHighlight.toString());
+
+      const response = await api.post('/photos', formData);
+      setPhotos([response.data, ...photos]);
+      setSnackbar({ open: true, message: 'Photo uploaded successfully!', severity: 'success' });
+      handleCloseUploadModal();
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      setSnackbar({ 
+        open: true, 
+        message: error.response?.data?.error || 'Failed to upload photo',
+        severity: 'error' 
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (!messageText.trim() || !socket) return;
+
+    socket.emit('send-message', {
+      libraryId,
+      content: messageText,
+    });
+
+    setMessageText('');
+  };
+
+  const handleOpenPhoto = async (photo: Photo) => {
+    setSelectedPhoto(photo);
+    selectedPhotoRef.current = photo;
+    setLoadingComments(true);
+    try {
+      const response = await api.get(`/messages/photo/${photo.id}`);
+      setPhotoComments(response.data);
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleClosePhoto = () => {
+    setSelectedPhoto(null);
+    selectedPhotoRef.current = null;
+    setPhotoComments([]);
+    setCommentText('');
+  };
+
+  const handleSendComment = () => {
+    if (!commentText.trim() || !socket || !selectedPhoto) return;
+
+    socket.emit('send-message', {
+      libraryId,
+      photoId: selectedPhoto.id,
+      replyToId: replyingTo?.id || null,
+      content: commentText,
+    });
+
+    setCommentText('');
+    setReplyingTo(null);
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!selectedPhoto) return;
+
+    if (!window.confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingPhoto(true);
+    try {
+      await api.delete(`/photos/${selectedPhoto.id}`);
+      setPhotos(photos.filter(p => p.id !== selectedPhoto.id));
+      setSnackbar({ open: true, message: 'Photo deleted successfully', severity: 'success' });
+      handleClosePhoto();
+    } catch (error: any) {
+      setSnackbar({ 
+        open: true, 
+        message: error.response?.data?.error || 'Failed to delete photo',
+        severity: 'error' 
+      });
+    } finally {
+      setDeletingPhoto(false);
+    }
+  };
+
+  const handleReply = (comment: PhotoComment) => {
+    setReplyingTo(comment);
+    // Focus on comment input
+    setTimeout(() => {
+      const input = document.querySelector('[placeholder="Write a comment..."]') as HTMLInputElement;
+      input?.focus();
+    }, 100);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <AppBar position="sticky" elevation={1} sx={{ backgroundColor: '#6F4E37' }}>
+        <Toolbar sx={{ px: { xs: 1, sm: 2 }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+          <IconButton 
+            edge="start" 
+            color="inherit" 
+            onClick={() => navigate('/libraries')}
+            sx={{ mr: 1 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          {libraryName && (
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                flexGrow: { xs: 0, sm: 1 },
+                mr: 2,
+                fontWeight: 600,
+                color: 'white',
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              {libraryName}
+            </Typography>
+          )}
+          <Tabs
+            value={activeTab === 'photos' ? 0 : activeTab === 'messages' ? 1 : 2}
+            onChange={(_, v) => {
+              if (v === 0) setActiveTab('photos');
+              else if (v === 1) setActiveTab('messages');
+              else setActiveTab('members');
+            }}
+            sx={{ flexGrow: { xs: 1, sm: 0 } }}
+            textColor="inherit"
+            indicatorColor="secondary"
+          >
+            <Tab label="Photos" />
+            <Tab label="Messages" />
+            <Tab label="Members" />
+          </Tabs>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ flex: 1, py: 4, px: { xs: 2, sm: 3 } }}>
+        {activeTab === 'photos' ? (
+          <>
+            {photos.length === 0 ? (
+              <Paper
+                elevation={0}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: 2,
+                  p: 3,
+                  mb: 3,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography variant="h5" sx={{ fontWeight: 700, color: '#3E2723' }}>
+                  Photos
+                </Typography>
+              </Paper>
+            ) : (
+              <Paper
+                elevation={0}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: 2,
+                  p: 3,
+                  mb: 3,
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#3E2723' }}>
+                    Photos
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    component="label"
+                    startIcon={<AddIcon />}
+                    sx={{
+                      backgroundColor: '#6F4E37',
+                      '&:hover': { backgroundColor: '#5A3E2A' },
+                    }}
+                  >
+                    Upload a photo
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                    />
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+
+            {photos.length === 0 ? (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 8,
+                  textAlign: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: 2,
+                }}
+              >
+                <CollectionsIcon sx={{ fontSize: 80, color: '#6F4E37', opacity: 0.5, mb: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#3E2723' }}>
+                  No photos yet
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Upload one to get started!
+                </Typography>
+              <Button
+                variant="contained"
+                component="label"
+                startIcon={<PhotoCameraIcon />}
+                  sx={{
+                    backgroundColor: '#6F4E37',
+                    '&:hover': { backgroundColor: '#5A3E2A' },
+                  }}
+              >
+                Upload Photo
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                    onChange={handleFileSelect}
+                />
+              </Button>
+              </Paper>
+            ) : (
+              <>
+                <Grid container spacing={2}>
+                {photos.map((photo) => (
+                  <Grid item xs={6} sm={4} md={3} key={photo.id}>
+                    <Card
+                      onClick={() => handleOpenPhoto(photo)}
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        border: '1px solid rgba(111, 78, 55, 0.1)',
+                        transition: 'all 0.2s ease-in-out',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(111, 78, 55, 0.15)',
+                        },
+                      }}
+                    >
+                      <CardMedia
+                        component="img"
+                        image={photo.imageUrl}
+                      alt={photo.description || 'Photo'}
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          objectFit: 'cover',
+                        }}
+                    />
+                      <CardContent sx={{ p: 1.5, flex: 1 }}>
+                    {photo.description && (
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              mb: 1,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                          {photo.description}
+                        </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar 
+                            sx={{ 
+                              width: 20, 
+                              height: 20, 
+                              fontSize: 12,
+                              bgcolor: '#6F4E37',
+                            }}
+                          >
+                            {photo.user.username.charAt(0).toUpperCase()}
+                          </Avatar>
+                        <Typography variant="caption" color="text.secondary">
+                            {photo.user.username}
+                        </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+                </Grid>
+              </>
+            )}
+          </>
+        ) : activeTab === 'messages' ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', maxHeight: 600 }}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                flex: 1, 
+                overflow: 'auto', 
+                p: 2, 
+                mb: 2, 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: 2,
+                minHeight: 400,
+              }}
+            >
+              {messages.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    No messages yet. Start the conversation!
+                  </Typography>
+                </Box>
+              ) : (
+                <List sx={{ py: 0 }}>
+                {messages.map((message) => {
+                  const isOwnMessage = message.user.id === user?.id;
+                  return (
+                    <ListItem
+                      key={message.id}
+                      sx={{
+                        justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
+                          px: 1,
+                          py: 0.5,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                            maxWidth: '75%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
+                          }}
+                        >
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              mb: 0.5,
+                              color: 'text.secondary',
+                              px: 1,
+                            }}
+                          >
+                            {message.user.username}
+                          </Typography>
+                          <Box
+                            sx={{
+                              bgcolor: isOwnMessage ? '#6F4E37' : 'rgba(111, 78, 55, 0.1)',
+                              color: isOwnMessage ? 'white' : '#3E2723',
+                          p: 1.5,
+                          borderRadius: 2,
+                              maxWidth: '100%',
+                        }}
+                      >
+                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
+                              {message.content}
+                        </Typography>
+                          </Box>
+                      </Box>
+                    </ListItem>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </List>
+              )}
+            </Paper>
+
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Type a message..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                multiline
+                maxRows={4}
+                  size="small"
+              />
+                <IconButton
+                  color="primary"
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || !socket}
+                  sx={{
+                    backgroundColor: '#6F4E37',
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#5A3E2A' },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'rgba(111, 78, 55, 0.3)',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                    },
+                  }}
+                >
+                  <SendIcon />
+                </IconButton>
+              </Box>
+            </Paper>
+          </Box>
+        ) : activeTab === 'members' ? (
+          <Paper
+            elevation={0}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: 2,
+              p: 3,
+            }}
+          >
+            <Typography variant="h5" sx={{ fontWeight: 700, color: '#3E2723', mb: 3 }}>
+              Library Members
+            </Typography>
+            {library && library.members && library.members.length > 0 ? (
+              <List>
+                {library.members.map((member: any) => {
+                  const isOwner = member.role === 'owner';
+                  const isCurrentUser = member.user.id === user?.id;
+                  const canRemove = library.createdBy === user?.id && !isOwner && !isCurrentUser;
+                  
+                  return (
+                    <ListItem
+                      key={member.id}
+                      sx={{
+                        border: '1px solid rgba(111, 78, 55, 0.1)',
+                        borderRadius: 2,
+                        mb: 2,
+                        bgcolor: 'white',
+                        '&:hover': {
+                          bgcolor: 'rgba(111, 78, 55, 0.02)',
+                        },
+                      }}
+                      secondaryAction={
+                        canRemove ? (
+                          <IconButton
+                            edge="end"
+                            onClick={() => handleRemoveMember(member.user.id)}
+                            disabled={removingMember === member.user.id}
+                            sx={{
+                              color: '#d32f2f',
+                              '&:hover': {
+                                bgcolor: 'rgba(211, 47, 47, 0.08)',
+                              },
+                            }}
+                          >
+                            {removingMember === member.user.id ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              <DeleteIcon />
+                            )}
+                          </IconButton>
+                        ) : null
+                      }
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: '#6F4E37',
+                          mr: 2,
+                          width: 48,
+                          height: 48,
+                        }}
+                        src={member.user.profilePhoto || undefined}
+                      >
+                        {member.user.username?.charAt(0).toUpperCase() || 'U'}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#3E2723' }}>
+                          {member.user.username}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {member.user.email}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                          <Chip
+                            label={isOwner ? 'Owner' : 'Member'}
+                            size="small"
+                            sx={{
+                              bgcolor: isOwner ? '#6F4E37' : 'rgba(111, 78, 55, 0.1)',
+                              color: isOwner ? 'white' : '#6F4E37',
+                              fontWeight: 500,
+                              height: 20,
+                              fontSize: '0.7rem',
+                            }}
+                          />
+                          {isCurrentUser && (
+                            <Chip
+                              label="You"
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(111, 78, 55, 0.15)',
+                                color: '#6F4E37',
+                                fontWeight: 500,
+                                height: 20,
+                                fontSize: '0.7rem',
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1" color="text.secondary">
+                  No members found
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        ) : null}
+      </Container>
+
+      {/* Upload Photo Modal */}
+      <Dialog
+        open={uploadModalOpen}
+        onClose={handleCloseUploadModal}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Upload Photo
+          </Typography>
+          <IconButton onClick={handleCloseUploadModal} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Photo Preview */}
+            {previewUrl && (
+              <Box
+                sx={{
+                  width: '100%',
+                  maxHeight: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: '#f5f5f5',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                }}
+              >
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: 400,
+                    objectFit: 'contain',
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Caption Field */}
+            <TextField
+              label="Caption (optional)"
+              fullWidth
+              multiline
+              rows={3}
+              value={photoDescription}
+              onChange={(e) => setPhotoDescription(e.target.value)}
+              placeholder="Add a caption to your photo..."
+              variant="outlined"
+            />
+
+            {/* Highlights Checkbox */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isHighlight}
+                  onChange={(e) => setIsHighlight(e.target.checked)}
+                  icon={<StarIcon sx={{ color: 'rgba(111, 78, 55, 0.3)' }} />}
+                  checkedIcon={<StarIcon sx={{ color: '#D4AF37' }} />}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    Make this a highlight
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Highlights appear prominently in your library
+                  </Typography>
+                </Box>
+              }
+            />
+          </Box>
+        </DialogContent>
+        <Box sx={{ px: 3, pb: 2.5, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Button
+            onClick={handleCloseUploadModal}
+            sx={{ color: 'text.secondary' }}
+            disabled={uploading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmUpload}
+            variant="contained"
+            disabled={uploading || !selectedFile}
+            sx={{
+              backgroundColor: '#6F4E37',
+              '&:hover': { backgroundColor: '#5A3E2A' },
+              px: 3,
+            }}
+          >
+            {uploading ? (
+              <>
+                <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                Uploading...
+              </>
+            ) : (
+              'Upload'
+            )}
+          </Button>
+        </Box>
+      </Dialog>
+
+      {/* Photo Detail Modal */}
+      <Dialog
+        open={!!selectedPhoto}
+        onClose={handleClosePhoto}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: '90vh',
+          }
+        }}
+      >
+        {selectedPhoto && (
+          <>
+            <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Avatar
+                  src={selectedPhoto.user.profilePhoto || undefined}
+                  sx={{ width: 32, height: 32, bgcolor: '#6F4E37', fontSize: 14 }}
+                >
+                  {selectedPhoto.user.username.charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  {selectedPhoto.user.username}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {selectedPhoto.user.id === user?.id && (
+                  <IconButton 
+                    onClick={handleDeletePhoto} 
+                    size="small"
+                    disabled={deletingPhoto}
+                    sx={{ 
+                      color: 'error.main',
+                      '&:hover': { backgroundColor: 'error.light', color: 'error.dark' }
+                    }}
+                  >
+                    {deletingPhoto ? <CircularProgress size={20} /> : <DeleteIcon />}
+                  </IconButton>
+                )}
+                <IconButton onClick={handleClosePhoto} size="small">
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            </DialogTitle>
+            <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, maxHeight: '70vh' }}>
+              <Box
+                sx={{
+                  width: { xs: '100%', md: '60%' },
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Box
+                  sx={{
+                    flex: 1,
+                    height: { xs: 300, md: 'auto' },
+                    minHeight: { md: 400 },
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: '#000',
+                  }}
+                >
+                  <img
+                    src={selectedPhoto.imageUrl}
+                    alt={selectedPhoto.description || 'Photo'}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      objectFit: 'contain',
+                    }}
+                  />
+                </Box>
+                {selectedPhoto.description && (
+                  <Box
+                    sx={{
+                      p: 2,
+                      bgcolor: '#fff',
+                      borderTop: { md: '1px solid rgba(0,0,0,0.12)' },
+                      borderRight: { md: '1px solid rgba(0,0,0,0.12)' },
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ color: '#3E2723', lineHeight: 1.6 }}>
+                      {selectedPhoto.description}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <Box
+                sx={{
+                  width: { xs: '100%', md: '40%' },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderLeft: { md: '1px solid rgba(0,0,0,0.12)' },
+                  borderTop: { xs: '1px solid rgba(0,0,0,0.12)', md: 'none' },
+                }}
+              >
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    p: 2,
+                    minHeight: 200,
+                    maxHeight: { xs: 300, md: 'calc(70vh - 120px)' },
+                  }}
+                >
+                  {loadingComments ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress size={30} />
+                    </Box>
+                  ) : photoComments.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <CommentIcon sx={{ fontSize: 48, color: 'rgba(111, 78, 55, 0.3)', mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        No comments yet. Be the first to comment!
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <List sx={{ py: 0 }}>
+                      {photoComments.map((comment) => {
+                        const isOwnComment = comment.user.id === user?.id;
+                        return (
+                          <ListItem key={comment.id} sx={{ px: 0, py: 1.5 }}>
+                            <Box sx={{ width: '100%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Avatar
+                                  src={comment.user.profilePhoto || undefined}
+                                  sx={{ width: 24, height: 24, bgcolor: '#6F4E37', fontSize: 12 }}
+                                >
+                                  {comment.user.username.charAt(0).toUpperCase()}
+                                </Avatar>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                  {comment.user.username}
+                                </Typography>
+                                {comment.replyTo && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <ReplyIcon sx={{ fontSize: 12 }} />
+                                    {comment.replyTo.user.username}
+                                  </Typography>
+                                )}
+                              </Box>
+                              {comment.replyTo && (
+                                <Box
+                                  sx={{
+                                    ml: 4,
+                                    mb: 0.5,
+                                    pl: 1.5,
+                                    borderLeft: '2px solid rgba(111, 78, 55, 0.2)',
+                                  }}
+                                >
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                    {comment.replyTo.content}
+                                  </Typography>
+                                </Box>
+                              )}
+                              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                <Typography variant="body2" sx={{ pl: 4, flex: 1 }}>
+                                  {comment.content}
+                                </Typography>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleReply(comment)}
+                                  sx={{ 
+                                    p: 0.5,
+                                    color: 'text.secondary',
+                                    '&:hover': { color: '#6F4E37' }
+                                  }}
+                                >
+                                  <ReplyIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                          </ListItem>
+                        );
+                      })}
+                      <div ref={commentsEndRef} />
+                    </List>
+                  )}
+                </Box>
+                <Divider />
+                <Box sx={{ p: 2 }}>
+                  {replyingTo && (
+                    <Box
+                      sx={{
+                        mb: 1,
+                        p: 1,
+                        bgcolor: 'rgba(111, 78, 55, 0.08)',
+                        borderRadius: 1,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ReplyIcon sx={{ fontSize: 16, color: '#6F4E37' }} />
+                        <Typography variant="caption" color="text.secondary">
+                          Replying to <strong>{replyingTo.user.username}</strong>
+                        </Typography>
+                      </Box>
+                      <IconButton size="small" onClick={handleCancelReply} sx={{ p: 0.5 }}>
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Box>
+                  )}
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder={replyingTo ? `Reply to ${replyingTo.user.username}...` : "Write a comment..."}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendComment();
+                        }
+                      }}
+                      multiline
+                      maxRows={3}
+                    />
+                    <IconButton
+                      color="primary"
+                      onClick={handleSendComment}
+                      disabled={!commentText.trim() || !socket}
+                      sx={{
+                        backgroundColor: '#6F4E37',
+                        color: 'white',
+                        '&:hover': { backgroundColor: '#5A3E2A' },
+                        '&.Mui-disabled': {
+                          backgroundColor: 'rgba(111, 78, 55, 0.3)',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                        },
+                      }}
+                    >
+                      <SendIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Box>
+            </DialogContent>
+          </>
+        )}
+      </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Welcome Modal */}
+      <Dialog
+        open={welcomeModalOpen}
+        onClose={() => {}} // Prevent closing by clicking outside
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            maxHeight: '90vh',
+            overflow: 'hidden',
+          }
+        }}
+        BackdropProps={{
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+          }
+        }}
+      >
+        {welcomeView === 'description' ? (
+          <>
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #6F4E37 0%, #8B6F47 100%)',
+                p: 4,
+                textAlign: 'center',
+                color: 'white',
+              }}
+            >
+              <LibraryBooksIcon 
+                sx={{ 
+                  fontSize: 64, 
+                  mb: 2,
+                  opacity: 0.9,
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
+                }} 
+              />
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 700, 
+                  mb: 1,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                Welcome to my library
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.95,
+                  fontSize: '0.95rem',
+                }}
+              >
+                Let's get you started
+              </Typography>
+            </Box>
+            <DialogContent sx={{ p: 4, pt: 4 }}>
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                {libraryDescription ? (
+                  <>
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        color: '#3E2723', 
+                        lineHeight: 2,
+                        fontSize: '1.15rem',
+                        mb: 3,
+                        px: 2,
+                      }}
+                    >
+                      {libraryDescription}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 1,
+                        mt: 2,
+                      }}
+                    >
+                      {[1, 2, 3].map((i) => (
+                        <Box
+                          key={i}
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: '#6F4E37',
+                            opacity: 0.3,
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </>
+                ) : (
+                  <Box sx={{ py: 2 }}>
+                    <LibraryBooksIcon 
+                      sx={{ 
+                        fontSize: 48, 
+                        color: '#6F4E37', 
+                        opacity: 0.2, 
+                        mb: 2 
+                      }} 
+                    />
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        color: 'text.secondary', 
+                        fontStyle: 'italic',
+                        fontSize: '1rem',
+                      }}
+                    >
+                      No description available for this library.
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 0, justifyContent: 'flex-end' }}>
+              <Button
+                onClick={handleNextInWelcome}
+                variant="contained"
+                endIcon={<ArrowForwardIcon />}
+                sx={{
+                  backgroundColor: '#6F4E37',
+                  color: 'white',
+                  px: 4,
+                  py: 1.2,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(111, 78, 55, 0.3)',
+                  '&:hover': { 
+                    backgroundColor: '#5A3E2A',
+                    boxShadow: '0 6px 16px rgba(111, 78, 55, 0.4)',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Next
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #6F4E37 0%, #8B6F47 100%)',
+                p: 3,
+                textAlign: 'center',
+                color: 'white',
+              }}
+            >
+              <StarIcon 
+                sx={{ 
+                  fontSize: 48, 
+                  mb: 1.5,
+                  opacity: 0.95,
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
+                }} 
+              />
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                Highlights
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9,
+                  mt: 0.5,
+                }}
+              >
+                Featured moments from this library
+              </Typography>
+            </Box>
+            <DialogContent sx={{ p: 3, maxHeight: '60vh', overflow: 'auto' }}>
+              {loadingHighlights ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                  <CircularProgress sx={{ color: '#6F4E37' }} />
+                </Box>
+              ) : highlights.length > 0 ? (
+                <Grid container spacing={2.5}>
+                  {highlights.map((photo) => (
+                    <Grid item xs={6} key={photo.id}>
+                      <Card
+                        elevation={2}
+                        sx={{
+                          cursor: 'pointer',
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                          },
+                        }}
+                        onClick={() => {
+                          handleCloseWelcome();
+                          setTimeout(() => handleOpenPhoto(photo), 300);
+                        }}
+                      >
+                        <Box sx={{ position: 'relative' }}>
+                          <CardMedia
+                            component="img"
+                            image={photo.imageUrl}
+                            alt={photo.description || 'Highlight'}
+                            sx={{
+                              height: 180,
+                              objectFit: 'cover',
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              bgcolor: 'rgba(111, 78, 55, 0.9)',
+                              borderRadius: '50%',
+                              p: 0.5,
+                            }}
+                          >
+                            <StarIcon sx={{ fontSize: 16, color: 'white' }} />
+                          </Box>
+                        </Box>
+                        {photo.description && (
+                          <CardContent sx={{ p: 1.5, pb: 1.5 }}>
+                            <Typography 
+                              variant="caption" 
+                              color="text.secondary" 
+                              sx={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                fontSize: '0.75rem',
+                              }}
+                            >
+                              {photo.description}
+                            </Typography>
+                          </CardContent>
+                        )}
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <StarIcon 
+                    sx={{ 
+                      fontSize: 72, 
+                      color: '#6F4E37', 
+                      opacity: 0.15, 
+                      mb: 2 
+                    }} 
+                  />
+                  <Typography 
+                    variant="body1" 
+                    color="text.secondary"
+                    sx={{ fontSize: '1rem' }}
+                  >
+                    No highlights yet
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ mt: 1, fontSize: '0.875rem', opacity: 0.7 }}
+                  >
+                    Highlights will appear here when added
+                  </Typography>
+          </Box>
+        )}
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 2, justifyContent: 'flex-end' }}>
+              <Button
+                onClick={handleCloseWelcome}
+                variant="contained"
+                startIcon={<CheckCircleIcon />}
+                sx={{
+                  backgroundColor: '#6F4E37',
+                  color: 'white',
+                  px: 4,
+                  py: 1.2,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(111, 78, 55, 0.3)',
+                  '&:hover': { 
+                    backgroundColor: '#5A3E2A',
+                    boxShadow: '0 6px 16px rgba(111, 78, 55, 0.4)',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Got it
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+    </Box>
+  );
+}
+
