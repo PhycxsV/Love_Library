@@ -119,7 +119,7 @@ export default function ProfilePage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
             <Box sx={{ position: 'relative', mb: 2 }}>
               <Avatar
-                src={user?.profilePhoto}
+                src={user?.profilePhoto ?? undefined}
                 sx={{
                   width: { xs: 100, sm: 120 },
                   height: { xs: 100, sm: 120 },
