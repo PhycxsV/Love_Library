@@ -97,9 +97,9 @@ interface PhotoComment extends Message {
   } | null;
 }
 
-const API_URL = import.meta.env.DEV
-  ? 'http://localhost:5000'
-  : 'https://love-library-a28m.onrender.com';
+const API_URL = import.meta.env.PROD
+  ? 'https://love-library-a28m.onrender.com'
+  : 'http://localhost:5000';
 
 export default function LibraryDetailPage() {
   const { id: libraryId } = useParams<{ id: string }>();

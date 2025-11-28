@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.DEV
-  ? 'http://localhost:5000/api'  // Local development
-  : 'https://love-library-a28m.onrender.com/api';  // Production (Render)
+const API_URL = import.meta.env.PROD
+  ? 'https://love-library-a28m.onrender.com/api'  // Production (Render)
+  : 'http://localhost:5000/api';  // Local development
 
 const api = axios.create({
   baseURL: API_URL,
@@ -32,7 +32,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-      error.message = 'Cannot connect to server. Please make sure the backend is running on http://localhost:5000';
+      error.message = 'Cannot connect to server. Please check your internet connection or try again later.';
     }
     return Promise.reject(error);
   }

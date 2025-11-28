@@ -75,9 +75,9 @@ export default function LibraryListPage() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
-  const API_URL = import.meta.env.DEV
-    ? 'http://localhost:5000'
-    : 'https://love-library-a28m.onrender.com';
+  const API_URL = import.meta.env.PROD
+    ? 'https://love-library-a28m.onrender.com'
+    : 'http://localhost:5000';
 
   useEffect(() => {
     if (user) {
