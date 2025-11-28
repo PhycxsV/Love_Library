@@ -4,12 +4,10 @@
     "slug": "love-library",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#E91E63",
+      "resizeMode": "contain"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -19,14 +17,10 @@
       "bundleIdentifier": "com.lovelibrary.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.lovelibrary.app"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+      "package": "com.lovelibrary.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
@@ -35,16 +29,11 @@
           "photosPermission": "The app needs access to your photos to upload them to your library."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "63dba2fb-627a-4452-8d0c-91ce8422de1a"
+      }
+    }
   }
 }
-
-
-
-
-
-
-
-
-
-

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, ImageBackground } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { FAB, Card, Text, Button, TextInput, Dialog, Portal } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import api from '../config/api';
+import { theme } from '../theme';
 
 interface Library {
   id: string;
@@ -84,11 +85,7 @@ export default function LibraryListScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/background.jpg')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
+    <View style={styles.backgroundImage}>
       <View style={styles.container}>
         <View style={styles.header}>
         <Text variant="headlineMedium" style={styles.headerTitle}>
@@ -199,7 +196,7 @@ export default function LibraryListScreen() {
         label="Join"
       />
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -208,10 +205,10 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   header: {
     flexDirection: 'row',

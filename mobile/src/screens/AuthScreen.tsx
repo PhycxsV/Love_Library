@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ImageBackground } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { theme } from '../theme';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,11 +39,7 @@ export default function AuthScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/background.jpg')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
+    <View style={styles.backgroundImage}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -115,7 +112,7 @@ export default function AuthScreen() {
         </Card>
       </View>
     </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -124,10 +121,10 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   content: {
     flex: 1,

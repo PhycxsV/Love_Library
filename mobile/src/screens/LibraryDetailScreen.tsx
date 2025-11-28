@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Image, KeyboardAvoidingView, Platform, ImageBackground, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { theme } from '../theme';
 import { TextInput, Button, Text, Card, FAB, IconButton } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -239,11 +240,7 @@ export default function LibraryDetailScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/background.jpg')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
+    <View style={styles.backgroundImage}>
       <View style={styles.container}>
         <View style={styles.header}>
         <IconButton icon="arrow-back" onPress={() => navigation.goBack()} />
