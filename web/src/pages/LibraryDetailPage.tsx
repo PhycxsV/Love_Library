@@ -526,19 +526,6 @@ export default function LibraryDetailPage() {
             <Tab label="Heart Messages" icon={<FavoriteIcon sx={{ fontSize: 18 }} />} iconPosition="start" />
             <Tab label="Members" />
           </Tabs>
-          <IconButton
-            onClick={handleOpenHighlights}
-            sx={{
-              ml: 2,
-              color: 'white',
-              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-            }}
-            aria-label="view highlights"
-          >
-            <Badge badgeContent={highlights.length} color="error">
-              <StarIcon />
-            </Badge>
-          </IconButton>
         </Toolbar>
       </AppBar>
 
