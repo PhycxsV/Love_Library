@@ -66,6 +66,23 @@ app.use('/api/photos', photoRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/profile', profileRoutes);
 
+// API root endpoint
+app.get('/api', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Love Library API is running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      libraries: '/api/libraries',
+      photos: '/api/photos',
+      messages: '/api/messages',
+      profile: '/api/profile'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Love Library API is running' });
