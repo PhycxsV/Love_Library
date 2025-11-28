@@ -101,7 +101,9 @@ interface PhotoComment extends Message {
   } | null;
 }
 
-const API_URL = import.meta.env.DEV ? 'http://localhost:5000' : 'https://your-production-api.com';
+const API_URL = import.meta.env.DEV
+  ? 'http://localhost:5000'
+  : 'https://love-library-a28m.onrender.com';
 
 export default function LibraryDetailPage() {
   const { id: libraryId } = useParams<{ id: string }>();
