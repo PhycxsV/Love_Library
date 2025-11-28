@@ -79,10 +79,13 @@ if (process.env.NODE_ENV === 'production') {
   const { execSync } = require('child_process');
   try {
     console.log('🔄 Running database migrations...');
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    console.log('📊 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: process.cwd() });
     console.log('✅ Migrations completed');
   } catch (error) {
-    console.error('⚠️ Migration error (may be normal if already migrated):', error);
+    console.error('❌ Migration error:', error);
+    console.error('⚠️ This is critical - tables may not exist!');
+    // Don't exit - let the server start so we can see the error
   }
 }
 
