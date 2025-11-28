@@ -117,6 +117,10 @@ export default function LibraryDetailPage() {
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [messageFilter, setMessageFilter] = useState<'all' | 'received' | 'sent'>('all');
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [uploading, setUploading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
@@ -708,6 +712,86 @@ export default function LibraryDetailPage() {
               </Paper>
             ) : (
               <>
+                {/* Message Filter Tabs */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1,
+                    backgroundColor: '#FFFBFD',
+                    borderRadius: 2,
+                    border: '1px solid rgba(233, 30, 99, 0.1)',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant={messageFilter === 'all' ? 'contained' : 'text'}
+                      onClick={() => setMessageFilter('all')}
+                      sx={{
+                        flex: 1,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        ...(messageFilter === 'all' && {
+                          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+                          color: 'white',
+                        }),
+                        ...(messageFilter !== 'all' && {
+                          color: '#6B6B6B',
+                          '&:hover': {
+                            backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                          },
+                        }),
+                      }}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={messageFilter === 'received' ? 'contained' : 'text'}
+                      onClick={() => setMessageFilter('received')}
+                      sx={{
+                        flex: 1,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        ...(messageFilter === 'received' && {
+                          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+                          color: 'white',
+                        }),
+                        ...(messageFilter !== 'received' && {
+                          color: '#6B6B6B',
+                          '&:hover': {
+                            backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                          },
+                        }),
+                      }}
+                    >
+                      Received
+                    </Button>
+                    <Button
+                      variant={messageFilter === 'sent' ? 'contained' : 'text'}
+                      onClick={() => setMessageFilter('sent')}
+                      sx={{
+                        flex: 1,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        ...(messageFilter === 'sent' && {
+                          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+                          color: 'white',
+                        }),
+                        ...(messageFilter !== 'sent' && {
+                          color: '#6B6B6B',
+                          '&:hover': {
+                            backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                          },
+                        }),
+                      }}
+                    >
+                      Sent
+                    </Button>
+                  </Box>
+                </Paper>
+
                 {/* Header with Send Button - Only show when there are messages */}
                 <Paper
                   elevation={0}
@@ -754,22 +838,22 @@ export default function LibraryDetailPage() {
                     })
                     .map((message) => {
                     const isOwnMessage = message.user.id === user?.id;
-                    const isExpanded = expandedMessageId === message.id;
                     const recipientNames = message.recipients?.map(r => r.user.username).join(', ') || '';
                     
                     return (
                     <Grid item xs={12} sm={6} md={4} key={message.id}>
                       <Card
-                        onClick={() => setExpandedMessageId(isExpanded ? null : message.id)}
+                        onClick={() => {
+                          setSelectedMessage(message);
+                          setShowMessageModal(true);
+                        }}
                         sx={{
                           cursor: 'pointer',
                           borderRadius: 3,
                           overflow: 'hidden',
                           border: '2px solid',
-                          borderColor: isExpanded ? '#E91E63' : 'rgba(233, 30, 99, 0.2)',
-                            background: isExpanded 
-                            ? 'linear-gradient(135deg, rgba(233, 30, 99, 0.08) 0%, rgba(233, 30, 99, 0.05) 100%)'
-                            : '#FFFBFD',
+                          borderColor: 'rgba(233, 30, 99, 0.2)',
+                          background: '#FFFBFD',
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             transform: 'translateY(-4px)',
@@ -810,11 +894,11 @@ export default function LibraryDetailPage() {
                             <FavoriteIcon sx={{ color: '#E91E63', fontSize: 24, opacity: 0.6 }} />
                           </Box>
 
-                          {/* Message Preview/Full */}
+                          {/* Message Preview */}
                           <Box
                             sx={{
-                              minHeight: isExpanded ? 'auto' : 60,
-                              maxHeight: isExpanded ? 'none' : 60,
+                              minHeight: 60,
+                              maxHeight: 60,
                               overflow: 'hidden',
                             }}
                           >
@@ -824,8 +908,8 @@ export default function LibraryDetailPage() {
                                 color: '#1A1A1A',
                                 lineHeight: 1.6,
                                 wordBreak: 'break-word',
-                                display: isExpanded ? 'block' : '-webkit-box',
-                                WebkitLineClamp: isExpanded ? 'none' : 3,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
                                 WebkitBoxOrient: 'vertical',
                               }}
                             >
@@ -844,11 +928,9 @@ export default function LibraryDetailPage() {
                           )}
 
                           {/* Click hint */}
-                          {!isExpanded && (
-                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: 0.5 }}>
-                              Click to read full message
-                            </Typography>
-                          )}
+                          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: 0.5 }}>
+                            Click to read full message
+                          </Typography>
                         </Box>
                       </Card>
                     </Grid>
@@ -857,6 +939,127 @@ export default function LibraryDetailPage() {
                 </Grid>
               </>
             )}
+
+            {/* View Heart Message Modal */}
+            <Dialog
+              open={showMessageModal}
+              onClose={() => {
+                setShowMessageModal(false);
+                setSelectedMessage(null);
+              }}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  borderRadius: 3,
+                  backgroundColor: '#FFFBFD',
+                }
+              }}
+            >
+              {selectedMessage && (
+                <>
+                  <DialogTitle sx={{ pb: 2, borderBottom: '1px solid rgba(233, 30, 99, 0.1)' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar
+                        src={selectedMessage.user.profilePhoto || undefined}
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: '#E91E63',
+                          fontSize: 20,
+                        }}
+                      >
+                        {selectedMessage.user.username.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1A1A1A' }}>
+                          {selectedMessage.user.username}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(selectedMessage.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Typography>
+                      </Box>
+                      <FavoriteIcon sx={{ color: '#E91E63', fontSize: 28 }} />
+                    </Box>
+                  </DialogTitle>
+                  <DialogContent sx={{ pt: 3, pb: 2 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: '#1A1A1A',
+                        lineHeight: 1.8,
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
+                        mb: 2,
+                      }}
+                    >
+                      {selectedMessage.content}
+                    </Typography>
+                    {selectedMessage.recipients && selectedMessage.recipients.length > 0 && (
+                      <Box sx={{ 
+                        mt: 2, 
+                        pt: 2, 
+                        borderTop: '1px solid rgba(233, 30, 99, 0.1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1,
+                      }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#E91E63', mb: 1 }}>
+                          Recipients:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {selectedMessage.recipients.map((recipient) => (
+                            <Chip
+                              key={recipient.user.id}
+                              avatar={
+                                <Avatar
+                                  src={recipient.user.profilePhoto || undefined}
+                                  sx={{ width: 24, height: 24, bgcolor: '#E91E63', fontSize: 12 }}
+                                >
+                                  {recipient.user.username.charAt(0).toUpperCase()}
+                                </Avatar>
+                              }
+                              label={recipient.user.username}
+                              size="small"
+                              sx={{
+                                backgroundColor: 'rgba(233, 30, 99, 0.1)',
+                                color: '#E91E63',
+                                border: '1px solid rgba(233, 30, 99, 0.2)',
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </DialogContent>
+                  <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button
+                      onClick={() => {
+                        setShowMessageModal(false);
+                        setSelectedMessage(null);
+                      }}
+                      variant="outlined"
+                      sx={{
+                        borderColor: '#E91E63',
+                        color: '#E91E63',
+                        '&:hover': {
+                          borderColor: '#C2185B',
+                          backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                        },
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </DialogActions>
+                </>
+              )}
+            </Dialog>
 
             {/* Send Heart Message Dialog */}
             <Dialog
